@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { saveRealmMessage, getRealmMeta, getRealmSmtp, DEFAULT_REALM_SLUG } from "@/lib/realms";
 import {
   sendAlertToAjay,
-  sendConfirmationToVisitor,
   sendCustomRealmAlert,
-  sendCustomConfirmationToVisitor,
 } from "@/lib/mailer";
 
 export async function POST(
@@ -68,10 +66,6 @@ export async function POST(
         ref: ref || `Realm: ${realm.slug}`,
         userAgent,
       }).catch((err) => console.error("Error dispatching alert email:", err));
-
-      sendConfirmationToVisitor(email.trim().toLowerCase(), name.trim(), realm.name).catch((err) =>
-        console.error("Error dispatching confirmation email:", err)
-      );
     } else {
       // For third-party realms: NEVER use Ajay's email!
       // Check if this realm configured its own personal Gmail App Password
@@ -88,13 +82,6 @@ export async function POST(
           ref: ref || `Realm: ${realm.slug}`,
           userAgent,
         }).catch((err) => console.error("Error dispatching custom realm alert:", err));
-
-        sendCustomConfirmationToVisitor({
-          smtp: realmSmtp,
-          toEmail: email.trim().toLowerCase(),
-          visitorName: name.trim(),
-          realmOwnerName: realm.name,
-        }).catch((err) => console.error("Error dispatching custom confirmation:", err));
       }
       // If realmSmtp is not configured, the visitor note is safely stored in their Redis Inbox.
       // Zero exposure of Ajay's email to Rohan or the visitor.

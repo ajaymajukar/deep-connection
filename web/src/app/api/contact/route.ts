@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { saveMessage } from "@/lib/redis";
-import { sendAlertToAjay, sendConfirmationToVisitor } from "@/lib/mailer";
+import { sendAlertToAjay } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,11 +58,6 @@ export async function POST(req: NextRequest) {
       ref: ref || null,
       userAgent,
     }).catch((err) => console.error("Error in sendAlertToAjay:", err));
-
-    // 3. Dispatch polite confirmation to visitor (async)
-    sendConfirmationToVisitor(email.trim().toLowerCase(), name.trim()).catch((err) =>
-      console.error("Error in sendConfirmationToVisitor:", err)
-    );
 
     return NextResponse.json({
       success: true,
