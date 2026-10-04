@@ -1,0 +1,23 @@
+# Dependencies and build outputs
+node_modules/
+.next/
+.env*
+
+# Local personal media and profile backups
+.local_personal_media/
+*-backup.json
+Dating Portfolio-1-001/
+Possible Icons-1-001/
+Screenshot_*.jpg
+
+# User uploads & personal image folders (keep only .gitkeep in git)
+web/public/uploads/*
+!web/public/uploads/.gitkeep
+web/public/images/portfolio/
+web/public/images/*.jpg
+web/public/images/*.png
+!web/public/images/.gitkeep
+
+# OS artifacts
+.DS_Store
+Thumbs.db
