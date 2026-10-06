@@ -185,7 +185,7 @@ export async function getComprehensiveAnalytics() {
     // Section definitions
     const sectionNames: Record<string, string> = {
       hero: "Hero & Introduction",
-      craft: "The Craft & Red Team Lab",
+      craft: "The Craft & Engineering Space",
       rhythm: "Life Rhythm, Tilakwadi & Western Ghats",
       vision: "Life Partner Vision & Expectations",
       connect: "Say Hello / Direct Contact Form",
