@@ -20,6 +20,7 @@ import {
   Sparkles,
   ChevronDown,
   Flame,
+  Utensils,
   ExternalLink,
   Plus,
   Trash2,
@@ -721,86 +722,119 @@ export default function StoryLiveEditor({
               {isEditMode && (
                 <button
                   type="button"
-                  onClick={() => handleOpenPhotoModal("craftDesk", "The Craft / Lab Photo")}
+                  onClick={() => handleOpenPhotoModal("craftDesk", "The Craft & Engineering Photo")}
                   className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2 cursor-pointer"
                 >
                   <div className="p-3 rounded-full bg-emerald-500 text-zinc-950 shadow-lg">
                     <Camera className="w-5 h-5" />
                   </div>
                   <span className="text-xs font-bold text-zinc-100 bg-zinc-900/90 px-3 py-1 rounded-full border border-zinc-700">
-                    Change Lab Photo
+                    Change Workspace Photo
                   </span>
                 </button>
               )}
 
               <div className="absolute bottom-3 left-4 text-xs font-medium text-zinc-300">
-                The Lab: Multi-monitor research battle station
+                Focus Space: Multi-monitor engineering and remote research setup
               </div>
             </div>
 
             {/* Craft Cards */}
             <div className="space-y-4">
-              {profile.craft.cards.map((card, idx) => (
-                <div key={card.id || idx} className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800/70 relative group">
-                  {isEditMode ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <input
-                          type="text"
-                          value={card.title}
-                          placeholder="Focus area / pillar title"
-                          onChange={(e) => {
-                            const newCards = [...profile.craft.cards];
-                            newCards[idx].title = e.target.value;
-                            updateField((p) => ({
-                              ...p,
-                              craft: { ...p.craft, cards: newCards },
-                            }));
-                          }}
-                          className="w-full text-base font-semibold text-zinc-200 bg-transparent border-b border-dashed border-zinc-700 focus:outline-none focus:border-emerald-400"
-                        />
-                        {profile.craft.cards.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newCards = profile.craft.cards.filter((_, i) => i !== idx);
+              {profile.craft.cards.map((card, idx) => {
+                const renderCardIcon = () => {
+                  switch (card.id) {
+                    case "cooking_market":
+                      return <Utensils className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "weightloss_grit":
+                      return <Flame className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "hsp_empathy":
+                      return <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "cybersecurity":
+                    default:
+                      return <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />;
+                  }
+                };
+
+                return (
+                  <div key={card.id || idx} className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800/70 relative group">
+                    {isEditMode ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <input
+                            type="text"
+                            value={card.title}
+                            placeholder="Focus area / pillar title"
+                            onChange={(e) => {
+                              const newCards = [...profile.craft.cards];
+                              newCards[idx].title = e.target.value;
                               updateField((p) => ({
                                 ...p,
                                 craft: { ...p.craft, cards: newCards },
                               }));
                             }}
-                            className="p-1 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-                            title="Remove this focus area"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                            className="w-full text-base font-semibold text-zinc-200 bg-transparent border-b border-dashed border-zinc-700 focus:outline-none focus:border-emerald-400"
+                          />
+                          {profile.craft.cards.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newCards = profile.craft.cards.filter((_, i) => i !== idx);
+                                updateField((p) => ({
+                                  ...p,
+                                  craft: { ...p.craft, cards: newCards },
+                                }));
+                              }}
+                              className="p-1 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                              title="Remove this focus area"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={card.desc}
+                          placeholder="Description of this domain or philosophy..."
+                          onChange={(e) => {
+                            const newCards = [...profile.craft.cards];
+                            newCards[idx].desc = e.target.value;
+                            updateField((p) => ({
+                              ...p,
+                              craft: { ...p.craft, cards: newCards },
+                            }));
+                          }}
+                          className="w-full text-xs text-zinc-400 bg-transparent border border-dashed border-zinc-700 rounded-lg p-1.5 focus:outline-none focus:border-emerald-400"
+                        />
                       </div>
-                      <textarea
-                        rows={2}
-                        value={card.desc}
-                        placeholder="Description of this domain or philosophy..."
-                        onChange={(e) => {
-                          const newCards = [...profile.craft.cards];
-                          newCards[idx].desc = e.target.value;
-                          updateField((p) => ({
-                            ...p,
-                            craft: { ...p.craft, cards: newCards },
-                          }));
-                        }}
-                        className="w-full text-xs text-zinc-400 bg-transparent border border-dashed border-zinc-700 rounded-lg p-1.5 focus:outline-none focus:border-emerald-400"
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <h3 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" /> {card.title}
-                      </h3>
-                      <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 leading-relaxed">{card.desc}</p>
-                    </>
-                  )}
-                </div>
-              ))}
+                    ) : (
+                      <>
+                        <h3 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
+                          {renderCardIcon()} {card.title}
+                        </h3>
+                        <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 leading-relaxed">{card.desc}</p>
+                        {card.image && (
+                          <div className="mt-3 relative aspect-[16/9] w-full rounded-xl overflow-hidden border border-zinc-800/80">
+                            <Image
+                              src={card.image}
+                              alt={card.title}
+                              fill
+                              sizes="400px"
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/70 via-transparent to-transparent" />
+                            {card.imageCaption && (
+                              <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-zinc-950/80 backdrop-blur-sm text-[11px] font-medium text-zinc-300 border border-zinc-800/60">
+                                {card.imageCaption}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
 
               {isEditMode && (
                 <button

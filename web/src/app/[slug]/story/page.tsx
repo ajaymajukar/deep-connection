@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Sparkles,
   Flame,
+  Utensils,
   ExternalLink
 } from "lucide-react";
 import { SOCIAL_CONFIGS } from "@/components/SocialIcons";
@@ -362,28 +363,61 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
             <div className="relative aspect-video sm:aspect-[4/3] rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900">
               <Image
                 src={profile.images.craftDesk}
-                alt="Workspace and research lab"
+                alt="Workspace and engineering space"
                 fill
                 sizes="(max-width: 768px) 100vw, 500px"
                 className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-4 text-xs font-medium text-zinc-300">
-                The Lab: Multi-monitor research battle station
+                Focus Space: Multi-monitor engineering and remote research setup
               </div>
             </div>
 
             <div className="space-y-4">
-              {profile.craft.cards.map((card, idx) => (
-                <div key={card.id || idx} className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800/70">
-                  <h3 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" /> {card.title}
-                  </h3>
-                  <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                    {card.desc}
-                  </p>
-                </div>
-              ))}
+              {profile.craft.cards.map((card, idx) => {
+                const renderIcon = () => {
+                  switch (card.id) {
+                    case "cooking_market":
+                      return <Utensils className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "weightloss_grit":
+                      return <Flame className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "hsp_empathy":
+                      return <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "cybersecurity":
+                    default:
+                      return <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />;
+                  }
+                };
+
+                return (
+                  <div key={card.id || idx} className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800/70">
+                    <h3 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
+                      {renderIcon()} {card.title}
+                    </h3>
+                    <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                      {card.desc}
+                    </p>
+                    {card.image && (
+                      <div className="mt-4 relative aspect-[16/9] w-full rounded-xl overflow-hidden border border-zinc-800/80 group">
+                        <Image
+                          src={card.image}
+                          alt={card.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 450px"
+                          className="object-cover group-hover:scale-105 transition duration-500 ease-out"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/70 via-transparent to-transparent" />
+                        {card.imageCaption && (
+                          <div className="absolute bottom-2.5 left-3 px-2 py-0.5 rounded-md bg-zinc-950/80 backdrop-blur-sm text-[11px] font-medium text-zinc-300 border border-zinc-800/60">
+                            {card.imageCaption}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

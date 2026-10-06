@@ -9,6 +9,7 @@ node_modules/
 Dating Portfolio-1-001/
 Possible Icons-1-001/
 Screenshot_*.jpg
+extra/
 
 # User uploads & personal image folders (keep only .gitkeep in git)
 web/public/uploads/*

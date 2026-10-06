@@ -26,6 +26,8 @@ export interface ProfileConfig {
       id: string;
       title: string;
       desc: string;
+      image?: string;
+      imageCaption?: string;
     }>;
   };
   rhythm: {
