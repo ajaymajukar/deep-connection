@@ -496,6 +496,31 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                 </p>
               </div>
             </div>
+
+            {profile.rhythm.extraCards?.map((card, idx) => (
+              <div
+                key={card.id || idx}
+                className="group relative rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 flex flex-col"
+              >
+                <div className="relative aspect-[3/4] w-full">
+                  <Image
+                    src={card.image}
+                    alt={card.title}
+                    fill
+                    sizes="350px"
+                    className="object-cover group-hover:scale-105 transition duration-500 ease-out"
+                  />
+                </div>
+                <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
+                  <h4 className="text-sm font-semibold text-zinc-200">
+                    {card.title}
+                  </h4>
+                  <p className="mt-1 text-xs text-zinc-400">
+                    {card.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 

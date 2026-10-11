@@ -41,6 +41,12 @@ export interface ProfileConfig {
     card2Desc?: string;
     card3Title?: string;
     card3Desc?: string;
+    extraCards?: Array<{
+      id: string;
+      title: string;
+      desc: string;
+      image: string;
+    }>;
   };
   partnerVision: {
     title: string;

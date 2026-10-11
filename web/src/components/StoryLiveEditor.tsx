@@ -1103,6 +1103,78 @@ export default function StoryLiveEditor({
                 )}
               </div>
             </div>
+
+            {profile.rhythm.extraCards?.map((card, idx) => (
+              <div
+                key={card.id || idx}
+                className="group relative rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 flex flex-col"
+              >
+                <div className="relative aspect-[3/4] w-full">
+                  <Image
+                    src={card.image}
+                    alt={card.title}
+                    fill
+                    sizes="350px"
+                    className="object-cover"
+                  />
+                  {isEditMode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextExtra = (profile.rhythm.extraCards || []).filter((_, i) => i !== idx);
+                        updateField((p) => ({
+                          ...p,
+                          rhythm: { ...p.rhythm, extraCards: nextExtra },
+                        }));
+                      }}
+                      className="absolute top-3 right-3 p-2 rounded-full bg-zinc-950/80 text-zinc-400 hover:text-rose-400 border border-zinc-800 transition cursor-pointer"
+                      title="Remove this card"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
+                  {isEditMode ? (
+                    <div className="space-y-1.5">
+                      <input
+                        type="text"
+                        value={card.title}
+                        placeholder="Card title"
+                        onChange={(e) => {
+                          const nextExtra = [...(profile.rhythm.extraCards || [])];
+                          nextExtra[idx] = { ...nextExtra[idx], title: e.target.value };
+                          updateField((p) => ({
+                            ...p,
+                            rhythm: { ...p.rhythm, extraCards: nextExtra },
+                          }));
+                        }}
+                        className="w-full text-sm font-semibold text-zinc-200 bg-transparent border-b border-dashed border-zinc-700 focus:outline-none focus:border-emerald-400"
+                      />
+                      <textarea
+                        rows={2}
+                        value={card.desc}
+                        placeholder="Card description..."
+                        onChange={(e) => {
+                          const nextExtra = [...(profile.rhythm.extraCards || [])];
+                          nextExtra[idx] = { ...nextExtra[idx], desc: e.target.value };
+                          updateField((p) => ({
+                            ...p,
+                            rhythm: { ...p.rhythm, extraCards: nextExtra },
+                          }));
+                        }}
+                        className="w-full text-xs text-zinc-400 bg-transparent border-b border-dashed border-zinc-700 focus:outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <h4 className="text-sm font-semibold text-zinc-200">{card.title}</h4>
+                      <p className="mt-1 text-xs text-zinc-400">{card.desc}</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 

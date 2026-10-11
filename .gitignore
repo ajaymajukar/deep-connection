@@ -10,6 +10,7 @@ Dating Portfolio-1-001/
 Possible Icons-1-001/
 Screenshot_*.jpg
 extra/
+newicons/
 
 # User uploads & personal image folders (keep only .gitkeep in git)
 web/public/uploads/*
