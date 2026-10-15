@@ -19,6 +19,20 @@ export interface RealmVisitEvent {
   ip: string | null;
 }
 
+export interface PrivateAlbumItem {
+  id: string;
+  url: string;
+  caption?: string;
+  category?: string;
+}
+
+export interface PrivateAlbumConfig {
+  enabled: boolean;
+  title?: string;
+  subtitle?: string;
+  photos: PrivateAlbumItem[];
+}
+
 export interface RealmContactMessage {
   id: string;
   timestamp: string;
@@ -27,6 +41,8 @@ export interface RealmContactMessage {
   contact?: string;
   message: string;
   referrer?: string | null;
+  photos?: string[];
+  unlockedAlbum?: boolean;
 }
 
 export interface RealmSectionDwellReport {
@@ -354,6 +370,40 @@ export async function saveRealmProfile(slug: string, profile: ProfileConfig): Pr
     }
   } catch (error) {
     console.error(`Failed to save profile for realm ${cleanSlug}:`, error);
+  }
+  return false;
+}
+
+/**
+ * Load private album configuration for a specific realm
+ */
+export async function getRealmPrivateAlbum(slug: string): Promise<PrivateAlbumConfig | null> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      const stored = await redis.get<PrivateAlbumConfig>(`realm:${cleanSlug}:private_album`);
+      if (stored && typeof stored === "object" && Array.isArray(stored.photos)) {
+        return stored;
+      }
+    }
+  } catch (error) {
+    console.error(`Failed to load private album for ${cleanSlug}:`, error);
+  }
+  return null;
+}
+
+/**
+ * Save private album configuration for a specific realm
+ */
+export async function saveRealmPrivateAlbum(slug: string, album: PrivateAlbumConfig): Promise<boolean> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      await redis.set(`realm:${cleanSlug}:private_album`, album);
+      return true;
+    }
+  } catch (error) {
+    console.error(`Failed to save private album for ${cleanSlug}:`, error);
   }
   return false;
 }

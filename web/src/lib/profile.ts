@@ -70,6 +70,13 @@ export interface ProfileConfig {
     twitter?: string;
     website?: string;
   };
+  privateAlbum?: {
+    enabled: boolean;
+    title?: string;
+    subtitle?: string;
+    photoCount?: number;
+    categories?: string[];
+  };
 }
 
 // Open-Source Default Profile Template

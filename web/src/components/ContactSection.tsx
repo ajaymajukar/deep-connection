@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import Image from "next/image";
 import confetti from "canvas-confetti";
-import { Send, CheckCircle2, AlertCircle, HeartHandshake, Sparkles, Lock } from "lucide-react";
+import { Send, CheckCircle2, AlertCircle, HeartHandshake, Sparkles, Lock, Camera, X, Eye } from "lucide-react";
 
 interface ContactSectionProps {
   slug?: string;
@@ -27,9 +28,13 @@ export default function ContactSection({
   const [email, setEmail] = useState("");
   const [contact, setContact] = useState("");
   const [message, setMessage] = useState("");
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [photoFileName, setPhotoFileName] = useState<string | null>(null);
+  const [unlockedThroughContact, setUnlockedThroughContact] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const displayTitle = title || `Say Hello to ${ownerName}`;
   const displaySubtitle =
@@ -68,6 +73,7 @@ export default function ContactSection({
           email: email.trim(),
           contact: contact.trim() || undefined,
           message: message.trim(),
+          photo: photoDataUrl || undefined,
           ref: referrer || undefined,
           turnstileToken: turnstileToken || undefined,
         }),
@@ -79,12 +85,21 @@ export default function ContactSection({
         throw new Error(data.error || "Failed to send message. Please try again.");
       }
 
+      if (data.unlocked && data.album && slug) {
+        try {
+          sessionStorage.setItem(`unlocked_album_${slug}`, JSON.stringify(data.album));
+          setUnlockedThroughContact(true);
+        } catch {
+          // Fallback
+        }
+      }
+
       setIsSubmitted(true);
 
       // Trigger celebratory confetti
       try {
         confetti({
-          particleCount: 80,
+          particleCount: 85,
           spread: 70,
           origin: { y: 0.7 },
           colors: ["#10b981", "#38bdf8", "#f59e0b", "#ec4899"],
@@ -97,6 +112,50 @@ export default function ContactSection({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorMessage(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("Please select an image file (JPG, PNG, WebP).");
+      return;
+    }
+
+    setPhotoFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setPhotoDataUrl(canvas.toDataURL("image/jpeg", 0.82));
+        } else {
+          setPhotoDataUrl(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -130,6 +189,25 @@ export default function ContactSection({
             <p className="mt-3 text-xs text-zinc-500">
               Every genuine message is read thoughtfully and will be answered directly by email.
             </p>
+
+            {unlockedThroughContact && (
+              <div className="mt-5 p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-center flex flex-col items-center gap-2 animate-in zoom-in-95 duration-300">
+                <span className="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  Mutual Photo Exchange Complete!
+                </span>
+                <p className="text-xs text-zinc-300">
+                  Because you shared a picture, {ownerName}&apos;s private photo album is now unlocked for you.
+                </p>
+                <a
+                  href="#private-album"
+                  className="mt-1 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                >
+                  <Eye className="w-3.5 h-3.5" /> View Unlocked Album
+                </a>
+              </div>
+            )}
+
             <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center justify-center gap-2 text-xs text-zinc-400">
               <HeartHandshake className="w-4 h-4 text-emerald-400" />
               Thank you for taking the time to connect.
@@ -199,6 +277,59 @@ export default function ContactSection({
                 onChange={(e) => setMessage(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/50 text-sm leading-relaxed transition"
               />
+            </div>
+
+            {/* Optional Photo Attachment */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Attach a Photo <span className="text-zinc-500 font-normal lowercase">(optional — unlocks {ownerName}&apos;s private album)</span>
+                </label>
+                {photoDataUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoDataUrl(null);
+                      setPhotoFileName(null);
+                    }}
+                    className="text-rose-400 hover:text-rose-300 text-[11px] flex items-center gap-1 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" /> Remove
+                  </button>
+                )}
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handlePhotoSelect}
+                className="hidden"
+              />
+
+              {photoDataUrl ? (
+                <div className="relative aspect-video max-h-48 w-full rounded-2xl overflow-hidden border border-emerald-500/50 bg-zinc-950 flex items-center justify-center">
+                  <Image
+                    src={photoDataUrl}
+                    alt="Photo preview"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-zinc-950/80 backdrop-blur-sm text-[11px] font-medium text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{photoFileName || "Photo ready to attach"}</span>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full px-4 py-3 rounded-xl border border-dashed border-zinc-700 hover:border-emerald-500/50 bg-zinc-950/40 hover:bg-zinc-950/70 text-zinc-400 hover:text-zinc-200 text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Camera className="w-4 h-4 text-emerald-400" />
+                  <span>Click to attach a picture of yourself (JPG, PNG)</span>
+                </button>
+              )}
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">

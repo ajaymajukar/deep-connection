@@ -20,6 +20,8 @@ export interface NotificationPayload {
   message: string;
   ref?: string | null;
   userAgent?: string | null;
+  photos?: string[];
+  unlockedAlbum?: boolean;
 }
 
 export interface CustomSmtpCredentials {
@@ -37,21 +39,57 @@ export async function sendAlertToAjay(payload: NotificationPayload) {
     return false;
   }
 
-  const subject = `✨ New Personal Note on your Story from ${payload.name || "a visitor"}`;
+  const hasPhotos = Boolean(payload.photos && payload.photos.length > 0);
+  const subject = hasPhotos
+    ? `📸 [Photo Exchange] New photo shared by ${payload.name || "a visitor"} on your Story!`
+    : `✨ New Personal Note on your Story from ${payload.name || "a visitor"}`;
   
+  const attachments: Array<{ filename: string; content: Buffer; contentType: string; cid: string }> = [];
+  if (hasPhotos && payload.photos) {
+    payload.photos.forEach((photo, idx) => {
+      const match = photo.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (match) {
+        attachments.push({
+          filename: `photo_${idx + 1}.jpg`,
+          content: Buffer.from(match[2], "base64"),
+          contentType: match[1],
+          cid: `shared_photo_${idx + 1}`,
+        });
+      }
+    });
+  }
+
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
-      <h2 style="color: #10b981; margin-top: 0; font-size: 20px;">New Message from your Story Page</h2>
-      <p style="font-size: 15px; color: #a1a1aa; line-height: 1.5;">Someone just took the time to read through your story and left you a private note.</p>
+      <h2 style="color: #10b981; margin-top: 0; font-size: 20px;">
+        ${hasPhotos ? "📸 Mutual Photo Exchange Received" : "New Message from your Story Page"}
+      </h2>
+      <p style="font-size: 15px; color: #a1a1aa; line-height: 1.5;">
+        ${hasPhotos
+          ? `<strong>${escapeHtml(payload.name)}</strong> just shared a photo to unlock your private album.`
+          : "Someone just took the time to read through your story and left you a private note."}
+      </p>
       
       <div style="background: #18181b; padding: 16px; border-radius: 8px; border: 1px solid #27272a; margin: 20px 0;">
         <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>From:</strong> <span style="color: #38bdf8;">${escapeHtml(payload.name)}</span></p>
         <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Email:</strong> <a href="mailto:${escapeHtml(payload.email)}" style="color: #38bdf8; text-decoration: none;">${escapeHtml(payload.email)}</a></p>
         ${payload.contact ? `<p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Social / Contact Handle:</strong> <span style="color: #e2e8f0;">${escapeHtml(payload.contact)}</span></p>` : ""}
         ${payload.ref ? `<p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Referral Source:</strong> <span style="color: #f59e0b; background: #451a03; padding: 2px 6px; border-radius: 4px;">${escapeHtml(payload.ref)}</span></p>` : ""}
+        ${hasPhotos ? `<p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Exchange Status:</strong> <span style="color: #34d399; font-weight: bold;">Unlocked Private Album</span></p>` : ""}
         <hr style="border: none; border-top: 1px solid #27272a; margin: 14px 0;" />
-        <p style="margin: 0 0 6px 0; font-size: 13px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Message:</p>
-        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #f4f4f5; white-space: pre-wrap;">${escapeHtml(payload.message)}</p>
+        <p style="margin: 0 0 6px 0; font-size: 13px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Message / Note:</p>
+        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #f4f4f5; white-space: pre-wrap;">${escapeHtml(payload.message || "No note provided.")}</p>
+        
+        ${attachments.length > 0 ? `
+          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #27272a;">
+            <p style="margin: 0 0 10px 0; font-size: 13px; color: #34d399; font-weight: bold;">Attached Photo(s):</p>
+            <div style="text-align: center;">
+              ${attachments.map((att) => `
+                <img src="cid:${att.cid}" alt="Shared photo" style="max-width: 100%; max-height: 380px; border-radius: 8px; border: 1px solid #3f3f46; display: block; margin: 0 auto 10px auto;" />
+              `).join("")}
+            </div>
+          </div>
+        ` : ""}
       </div>
 
       <p style="font-size: 12px; color: #71717a; margin-bottom: 0;">Sent via Deep Connection Story Engine</p>
@@ -65,6 +103,7 @@ export async function sendAlertToAjay(payload: NotificationPayload) {
       replyTo: payload.email,
       subject,
       html,
+      attachments: attachments.map(a => ({ filename: a.filename, content: a.content, contentType: a.contentType, cid: a.cid })),
     });
     return true;
   } catch (error) {
@@ -127,8 +166,10 @@ export async function sendCustomRealmAlert(options: {
   message: string;
   ref?: string | null;
   userAgent?: string | null;
+  photos?: string[];
+  unlockedAlbum?: boolean;
 }) {
-  const { smtp, realmName, name, email, contact, message, ref } = options;
+  const { smtp, realmName, name, email, contact, message, ref, photos, unlockedAlbum } = options;
   if (!smtp.email || !smtp.appPassword) return false;
 
   const transporter = nodemailer.createTransport({
@@ -139,20 +180,57 @@ export async function sendCustomRealmAlert(options: {
     },
   });
 
-  const subject = `✨ New Personal Note on your Story from ${name || "a visitor"}`;
+  const hasPhotos = Boolean(photos && photos.length > 0);
+  const subject = hasPhotos
+    ? `📸 [Photo Exchange] New photo shared by ${name || "a visitor"} on your Story!`
+    : `✨ New Personal Note on your Story from ${name || "a visitor"}`;
+
+  const attachments: Array<{ filename: string; content: Buffer; contentType: string; cid: string }> = [];
+  if (hasPhotos && photos) {
+    photos.forEach((photo, idx) => {
+      const match = photo.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (match) {
+        attachments.push({
+          filename: `photo_${idx + 1}.jpg`,
+          content: Buffer.from(match[2], "base64"),
+          contentType: match[1],
+          cid: `shared_photo_${idx + 1}`,
+        });
+      }
+    });
+  }
+
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
-      <h2 style="color: #10b981; margin-top: 0; font-size: 20px;">New Message from your Story Page</h2>
-      <p style="font-size: 15px; color: #a1a1aa; line-height: 1.5;">Someone just took the time to read through your story and left you a private note.</p>
+      <h2 style="color: #10b981; margin-top: 0; font-size: 20px;">
+        ${hasPhotos ? "📸 Mutual Photo Exchange Received" : "New Message from your Story Page"}
+      </h2>
+      <p style="font-size: 15px; color: #a1a1aa; line-height: 1.5;">
+        ${hasPhotos
+          ? `<strong>${escapeHtml(name)}</strong> just shared a photo to unlock your private album.`
+          : "Someone just took the time to read through your story and left you a private note."}
+      </p>
       
       <div style="background: #18181b; padding: 16px; border-radius: 8px; border: 1px solid #27272a; margin: 20px 0;">
         <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>From:</strong> <span style="color: #38bdf8;">${escapeHtml(name)}</span></p>
         <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}" style="color: #38bdf8; text-decoration: none;">${escapeHtml(email)}</a></p>
         ${contact ? `<p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Social / Contact Handle:</strong> <span style="color: #e2e8f0;">${escapeHtml(contact)}</span></p>` : ""}
         ${ref ? `<p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Referral Source:</strong> <span style="color: #f59e0b; background: #451a03; padding: 2px 6px; border-radius: 4px;">${escapeHtml(ref)}</span></p>` : ""}
+        ${hasPhotos ? `<p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Exchange Status:</strong> <span style="color: #34d399; font-weight: bold;">Unlocked Private Album</span></p>` : ""}
         <hr style="border: none; border-top: 1px solid #27272a; margin: 14px 0;" />
-        <p style="margin: 0 0 6px 0; font-size: 13px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Message:</p>
-        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #f4f4f5; white-space: pre-wrap;">${escapeHtml(message)}</p>
+        <p style="margin: 0 0 6px 0; font-size: 13px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Message / Note:</p>
+        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #f4f4f5; white-space: pre-wrap;">${escapeHtml(message || "No note provided.")}</p>
+        
+        ${attachments.length > 0 ? `
+          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #27272a;">
+            <p style="margin: 0 0 10px 0; font-size: 13px; color: #34d399; font-weight: bold;">Attached Photo(s):</p>
+            <div style="text-align: center;">
+              ${attachments.map((att) => `
+                <img src="cid:${att.cid}" alt="Shared photo" style="max-width: 100%; max-height: 380px; border-radius: 8px; border: 1px solid #3f3f46; display: block; margin: 0 auto 10px auto;" />
+              `).join("")}
+            </div>
+          </div>
+        ` : ""}
       </div>
 
       <p style="font-size: 12px; color: #71717a; margin-bottom: 0;">Sent via ${escapeHtml(realmName)}'s Story Realm</p>
@@ -166,6 +244,7 @@ export async function sendCustomRealmAlert(options: {
       replyTo: email,
       subject,
       html,
+      attachments: attachments.map(a => ({ filename: a.filename, content: a.content, contentType: a.contentType, cid: a.cid })),
     });
     return true;
   } catch (error) {

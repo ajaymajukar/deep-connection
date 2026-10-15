@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveRealmMessage, getRealmMeta, getRealmSmtp, DEFAULT_REALM_SLUG } from "@/lib/realms";
+import {
+  saveRealmMessage,
+  getRealmMeta,
+  getRealmSmtp,
+  getRealmPrivateAlbum,
+  DEFAULT_REALM_SLUG,
+} from "@/lib/realms";
 import {
   sendAlertToAjay,
   sendCustomRealmAlert,
 } from "@/lib/mailer";
+import sharp from "sharp";
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +24,7 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { name, email, contact, message, ref, turnstileToken } = body;
+    const { name, email, contact, message, photo, photos, ref, turnstileToken } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json({ success: false, error: "Please enter your name." }, { status: 400 });
@@ -44,6 +51,35 @@ export async function POST(
       }
     }
 
+    // Extract photo(s) if provided
+    const rawPhotos: string[] = [];
+    if (photo && typeof photo === "string") {
+      rawPhotos.push(photo);
+    }
+    if (Array.isArray(photos)) {
+      rawPhotos.push(...photos.filter((p) => typeof p === "string" && p.trim().length > 0));
+    }
+
+    const optimizedPhotos: string[] = [];
+    for (const raw of rawPhotos.slice(0, 3)) {
+      const match = raw.match(/^data:image\/\w+;base64,(.+)$/);
+      if (!match) continue;
+      const buffer = Buffer.from(match[1], "base64");
+      try {
+        const compressed = await sharp(buffer)
+          .rotate()
+          .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 80, progressive: true })
+          .toBuffer();
+        optimizedPhotos.push(`data:image/jpeg;base64,${compressed.toString("base64")}`);
+      } catch (e) {
+        if (raw.length < 500000) {
+          optimizedPhotos.push(raw);
+        }
+      }
+    }
+
+    const hasPhotos = optimizedPhotos.length > 0;
     const userAgent = req.headers.get("user-agent") || undefined;
 
     // 1. Save to Realm in Redis
@@ -53,11 +89,12 @@ export async function POST(
       contact: contact ? contact.trim() : undefined,
       message: message.trim(),
       referrer: ref || null,
+      photos: hasPhotos ? optimizedPhotos : undefined,
+      unlockedAlbum: hasPhotos ? true : undefined,
     });
 
     // 2. Dispatch email alerts
     if (slug === DEFAULT_REALM_SLUG) {
-      // Ajay's personal realm uses master server environment variables
       sendAlertToAjay({
         name: name.trim(),
         email: email.trim().toLowerCase(),
@@ -65,10 +102,10 @@ export async function POST(
         message: message.trim(),
         ref: ref || `Realm: ${realm.slug}`,
         userAgent,
+        photos: hasPhotos ? optimizedPhotos : undefined,
+        unlockedAlbum: hasPhotos ? true : undefined,
       }).catch((err) => console.error("Error dispatching alert email:", err));
     } else {
-      // For third-party realms: NEVER use Ajay's email!
-      // Check if this realm configured its own personal Gmail App Password
       const realmSmtp = await getRealmSmtp(slug);
       if (realmSmtp && realmSmtp.enabled && realmSmtp.email && realmSmtp.appPassword) {
         sendCustomRealmAlert({
@@ -81,16 +118,27 @@ export async function POST(
           message: message.trim(),
           ref: ref || `Realm: ${realm.slug}`,
           userAgent,
+          photos: hasPhotos ? optimizedPhotos : undefined,
+          unlockedAlbum: hasPhotos ? true : undefined,
         }).catch((err) => console.error("Error dispatching custom realm alert:", err));
       }
-      // If realmSmtp is not configured, the visitor note is safely stored in their Redis Inbox.
-      // Zero exposure of Ajay's email to Rohan or the visitor.
+    }
+
+    // 3. If visitor attached a photo, unlock the private album for them
+    let albumToReturn: any[] = [];
+    if (hasPhotos) {
+      const album = await getRealmPrivateAlbum(slug);
+      if (album && album.enabled && Array.isArray(album.photos)) {
+        albumToReturn = album.photos;
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: `Your note has reached ${realm.name} directly.`,
       id: saved.id,
+      unlocked: hasPhotos,
+      album: hasPhotos ? albumToReturn : undefined,
     });
   } catch (error) {
     console.error("Error in realm contact submission:", error);

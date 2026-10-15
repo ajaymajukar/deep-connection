@@ -22,6 +22,7 @@ import {
 import { SOCIAL_CONFIGS } from "@/components/SocialIcons";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import ContactSection from "@/components/ContactSection";
+import MutualPhotoReveal from "@/components/MutualPhotoReveal";
 import { DEFAULT_PROFILE, ProfileConfig, getGenericStarterProfile } from "@/lib/profile";
 
 function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: string }> }) {
@@ -523,6 +524,19 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
             ))}
           </div>
         </section>
+
+        {/* Section 2.5: Mutual Photo Exchange & Private Album */}
+        {profile.privateAlbum?.enabled !== false && (
+          <MutualPhotoReveal
+            slug={slug}
+            ownerName={profile.name}
+            title={profile.privateAlbum?.title}
+            subtitle={profile.privateAlbum?.subtitle}
+            photoCount={profile.privateAlbum?.photoCount || 4}
+            categories={profile.privateAlbum?.categories}
+            turnstileToken={turnstileToken}
+          />
+        )}
 
         {/* Section 3: Life Partner Vision */}
         <section id="partner-vision" data-section="vision" className="py-16 px-4 sm:px-6 max-w-5xl mx-auto border-t border-zinc-900">

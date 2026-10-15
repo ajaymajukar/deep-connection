@@ -24,6 +24,8 @@ export interface ContactMessage {
   contact?: string;
   message: string;
   referrer?: string | null;
+  photos?: string[];
+  unlockedAlbum?: boolean;
 }
 
 export interface SectionDwellReport {

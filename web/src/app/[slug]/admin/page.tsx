@@ -23,8 +23,11 @@ import {
   Settings,
   HelpCircle,
   ChevronDown,
-  Key
+  Key,
+  Camera,
+  X
 } from "lucide-react";
+import Image from "next/image";
 import { ProfileConfig, DEFAULT_PROFILE, getGenericStarterProfile } from "@/lib/profile";
 import StoryLiveEditor from "@/components/StoryLiveEditor";
 
@@ -44,6 +47,8 @@ interface ContactMessage {
   contact?: string;
   message: string;
   referrer?: string | null;
+  photos?: string[];
+  unlockedAlbum?: boolean;
 }
 
 interface RealmAnalyticsData {
@@ -76,6 +81,7 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
   );
   const [isLoading, setIsLoading] = useState(false);
   const [copiedLLM, setCopiedLLM] = useState(false);
+  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
 
   // Deletion state
   const [deleteConfirmSlug, setDeleteConfirmSlug] = useState("");
@@ -648,6 +654,11 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
                         {msg.contact}
                       </span>
                     )}
+                    {msg.photos && msg.photos.length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 rounded text-[11px] bg-purple-500/10 text-purple-300 border border-purple-500/30 inline-flex items-center gap-1 font-semibold">
+                        <Camera className="w-3 h-3 text-purple-400" /> Photo Attached
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     {msg.referrer && (
@@ -662,6 +673,33 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
                 </div>
 
                 <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+
+                {msg.photos && msg.photos.length > 0 && (
+                  <div className="pt-2">
+                    <span className="text-xs font-semibold text-purple-300 flex items-center gap-1.5 mb-2">
+                      <Camera className="w-3.5 h-3.5 text-purple-400" /> Attached Photo(s):
+                    </span>
+                    <div className="flex flex-wrap gap-3">
+                      {msg.photos.map((photo, pIdx) => (
+                        <div
+                          key={pIdx}
+                          onClick={() => setViewingPhoto(photo)}
+                          className="relative aspect-square w-24 sm:w-28 rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 cursor-pointer hover:border-emerald-400 group shadow-md"
+                        >
+                          <Image
+                            src={photo}
+                            alt={`Attached photo ${pIdx + 1}`}
+                            fill
+                            className="object-cover group-hover:scale-105 transition"
+                          />
+                          <div className="absolute inset-0 bg-zinc-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                            <Eye className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-2 flex justify-end">
                   <a
@@ -965,6 +1003,51 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Screen Visitor Photo Viewer Modal */}
+      {viewingPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setViewingPhoto(null)}
+        >
+          <div
+            className="relative max-w-2xl w-full max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-3xl p-4 shadow-2xl flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between pb-3 border-b border-zinc-800">
+              <span className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-emerald-400" />
+                Shared Visitor Photo
+              </span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewingPhoto}
+                  download={`visitor_photo_${Date.now()}.jpg`}
+                  className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setViewingPhoto(null)}
+                  className="p-1.5 rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="relative w-full aspect-[3/4] max-h-[70vh] rounded-2xl overflow-hidden mt-3 bg-zinc-950">
+              <Image
+                src={viewingPhoto}
+                alt="Full size visitor photo"
+                fill
+                className="object-contain"
+              />
             </div>
           </div>
         </div>
