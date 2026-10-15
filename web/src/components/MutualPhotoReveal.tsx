@@ -70,11 +70,28 @@ export default function MutualPhotoReveal({
         if (Array.isArray(parsed) && parsed.length > 0) {
           setUnlockedPhotos(parsed);
           setIsUnlocked(true);
+        } else if (stored === "true") {
+          setIsUnlocked(true);
         }
       }
     } catch {
       // Ignore sessionStorage parsing errors
     }
+
+    const handleOpen = () => setIsModalOpen(true);
+    const handleUnlocked = (e: any) => {
+      setIsUnlocked(true);
+      if (e.detail?.album && Array.isArray(e.detail.album)) {
+        setUnlockedPhotos(e.detail.album);
+      }
+    };
+
+    window.addEventListener("open-mutual-reveal", handleOpen);
+    window.addEventListener("mutual-reveal-unlocked", handleUnlocked);
+    return () => {
+      window.removeEventListener("open-mutual-reveal", handleOpen);
+      window.removeEventListener("mutual-reveal-unlocked", handleUnlocked);
+    };
   }, [slug]);
 
   // Handle client-side photo selection & compression
@@ -180,6 +197,10 @@ export default function MutualPhotoReveal({
       } catch {
         // Fallback
       }
+
+      window.dispatchEvent(
+        new CustomEvent("mutual-reveal-unlocked", { detail: { album: receivedAlbum } })
+      );
 
       // Celebratory Confetti!
       try {

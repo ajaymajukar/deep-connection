@@ -17,7 +17,9 @@ import {
   Sparkles,
   Flame,
   Utensils,
-  ExternalLink
+  ExternalLink,
+  Lock,
+  Unlock
 } from "lucide-react";
 import { SOCIAL_CONFIGS } from "@/components/SocialIcons";
 import TurnstileWidget from "@/components/TurnstileWidget";
@@ -34,10 +36,31 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [isPhotoUnlocked, setIsPhotoUnlocked] = useState<boolean>(false);
 
   const dwellTimesRef = useRef<Record<string, number>>({});
   const activeSectionsRef = useRef<Set<string>>(new Set());
   const viewedSectionsRef = useRef<Set<string>>(new Set());
+
+  // Check if visitor has already completed mutual reveal
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(`unlocked_album_${slug}`);
+      if (stored) {
+        setIsPhotoUnlocked(true);
+      }
+    } catch {
+      // Ignore
+    }
+
+    const handleUnlocked = () => setIsPhotoUnlocked(true);
+    window.addEventListener("mutual-reveal-unlocked", handleUnlocked);
+    return () => window.removeEventListener("mutual-reveal-unlocked", handleUnlocked);
+  }, [slug]);
+
+  const triggerMutualReveal = () => {
+    window.dispatchEvent(new CustomEvent("open-mutual-reveal"));
+  };
 
   // 1. Fetch live dynamic profile for this realm
   useEffect(() => {
@@ -230,22 +253,47 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
         <section data-section="hero" className="relative pt-12 pb-16 px-4 sm:px-6 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-5 relative group">
-              <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-900">
+              <div
+                onClick={() => {
+                  if (!isPhotoUnlocked) triggerMutualReveal();
+                }}
+                className={`relative aspect-[4/5] rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-900 ${
+                  !isPhotoUnlocked ? "cursor-pointer" : ""
+                }`}
+              >
                 <Image
                   src={profile.images.hero}
                   alt={`${profile.name} portrait`}
                   fill
                   sizes="(max-width: 768px) 100vw, 400px"
                   priority
-                  className="object-cover group-hover:scale-105 transition duration-500 ease-out"
+                  className={`object-cover transition-all duration-700 ${
+                    isPhotoUnlocked ? "blur-0 scale-100 group-hover:scale-105" : "blur-2xl scale-110"
+                  }`}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 p-3 rounded-2xl bg-zinc-900/80 backdrop-blur-md border border-zinc-800/80">
-                  <p className="text-xs text-zinc-400 font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    {profile.name} • {profile.specs.height}
-                  </p>
-                </div>
+
+                {!isPhotoUnlocked ? (
+                  <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center group-hover:bg-zinc-950/30 transition">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition">
+                      <Lock className="w-6 h-6" />
+                    </div>
+                    <span className="text-base font-bold text-zinc-100">Photo Protected</span>
+                    <p className="text-xs text-zinc-300 mt-1 max-w-[200px] leading-relaxed">
+                      Share your photo to reveal {profile.name}&apos;s face & photos
+                    </p>
+                    <span className="mt-3.5 px-4 py-1.5 rounded-full bg-emerald-500 text-zinc-950 text-xs font-bold shadow-lg shadow-emerald-500/20 group-hover:bg-emerald-400 transition">
+                      Mutual Reveal • Click to Unlock
+                    </span>
+                  </div>
+                ) : (
+                  <div className="absolute bottom-4 left-4 right-4 p-3 rounded-2xl bg-zinc-900/80 backdrop-blur-md border border-zinc-800/80">
+                    <p className="text-xs text-zinc-400 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      {profile.name} • {profile.specs.height}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -442,11 +490,25 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               <div className="relative aspect-[3/4] w-full">
                 <Image
                   src={profile.images.friendsTrip}
-                  alt="Exploring outdoors with friends"
+                  alt="Western Ghats and outdoor life"
                   fill
                   sizes="350px"
-                  className="object-cover group-hover:scale-105 transition duration-500 ease-out"
+                  className={`object-cover transition-all duration-700 ${
+                    isPhotoUnlocked ? "blur-0 scale-100 group-hover:scale-105" : "blur-2xl scale-110"
+                  }`}
                 />
+                {!isPhotoUnlocked && (
+                  <div
+                    onClick={triggerMutualReveal}
+                    className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center cursor-pointer group-hover:bg-zinc-950/30 transition"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-1.5 shadow-md group-hover:scale-110 transition">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-200">Photo Locked</span>
+                    <span className="text-[10px] text-zinc-400 mt-0.5">Click to unlock</span>
+                  </div>
+                )}
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
@@ -465,8 +527,22 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                   alt="Transformation milestone"
                   fill
                   sizes="350px"
-                  className="object-cover group-hover:scale-105 transition duration-500 ease-out"
+                  className={`object-cover transition-all duration-700 ${
+                    isPhotoUnlocked ? "blur-0 scale-100 group-hover:scale-105" : "blur-2xl scale-110"
+                  }`}
                 />
+                {!isPhotoUnlocked && (
+                  <div
+                    onClick={triggerMutualReveal}
+                    className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center cursor-pointer group-hover:bg-zinc-950/30 transition"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-1.5 shadow-md group-hover:scale-110 transition">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-200">Photo Locked</span>
+                    <span className="text-[10px] text-zinc-400 mt-0.5">Click to unlock</span>
+                  </div>
+                )}
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
@@ -485,8 +561,22 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                   alt="Active coastal travels"
                   fill
                   sizes="350px"
-                  className="object-cover group-hover:scale-105 transition duration-500 ease-out"
+                  className={`object-cover transition-all duration-700 ${
+                    isPhotoUnlocked ? "blur-0 scale-100 group-hover:scale-105" : "blur-2xl scale-110"
+                  }`}
                 />
+                {!isPhotoUnlocked && (
+                  <div
+                    onClick={triggerMutualReveal}
+                    className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center cursor-pointer group-hover:bg-zinc-950/30 transition"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-1.5 shadow-md group-hover:scale-110 transition">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-200">Photo Locked</span>
+                    <span className="text-[10px] text-zinc-400 mt-0.5">Click to unlock</span>
+                  </div>
+                )}
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
@@ -509,8 +599,22 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                     alt={card.title}
                     fill
                     sizes="350px"
-                    className="object-cover group-hover:scale-105 transition duration-500 ease-out"
+                    className={`object-cover transition-all duration-700 ${
+                      isPhotoUnlocked ? "blur-0 scale-100 group-hover:scale-105" : "blur-2xl scale-110"
+                    }`}
                   />
+                  {!isPhotoUnlocked && (
+                    <div
+                      onClick={triggerMutualReveal}
+                      className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center cursor-pointer group-hover:bg-zinc-950/30 transition"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-1.5 shadow-md group-hover:scale-110 transition">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-semibold text-zinc-200">Photo Locked</span>
+                      <span className="text-[10px] text-zinc-400 mt-0.5">Click to unlock</span>
+                    </div>
+                  )}
                 </div>
                 <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                   <h4 className="text-sm font-semibold text-zinc-200">
