@@ -512,10 +512,10 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
-                  {profile.rhythm.card1Title || "The Starting Point (04 Mar 2024)"}
+                  {profile.rhythm.card1Title || "Western Ghats Drives & Mountain Air"}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {profile.rhythm.card1Desc || "Where the commitment began. Deciding to reclaim my health, stamina, and discipline."}
+                  {profile.rhythm.card1Desc || "Belagavi sits right at the threshold of the Western Ghats. Taking peaceful road trips through the misty ghats and pausing at quiet viewpoints is my favorite way to clear my mind."}
                 </p>
               </div>
             </div>
@@ -546,10 +546,10 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
-                  {profile.rhythm.card2Title || "Six Months of Grit (12 Sep 2024)"}
+                  {profile.rhythm.card2Title || "Learning the Basics of Fishing (101)"}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {profile.rhythm.card2Desc || "Proof of follow-through. Not at my absolute peak yet, but living proof that when I take something to heart, I see it through no matter what."}
+                  {profile.rhythm.card2Desc || "I recently learned the 101 basics of fishing during a trip to the coast. Learning to read the water, bait the hook, and wait patiently by the rocks is a hobby I would love to pursue during my coastal trips in the future."}
                 </p>
               </div>
             </div>
@@ -580,10 +580,10 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
-                  {profile.rhythm.card3Title || "Active Living & True Friends"}
+                  {profile.rhythm.card3Title || "Slow Evenings by the Coast"}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {profile.rhythm.card3Desc || "Coastal trails, fresh sea breezes, and genuine friendships that keep life grounded and fun."}
+                  {profile.rhythm.card3Desc || "Watching the sun dip below the horizon with the waves washing over the sand. The coast always reminds me to slow down, breathe, and appreciate simple moments."}
                 </p>
               </div>
             </div>

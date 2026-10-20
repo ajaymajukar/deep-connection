@@ -962,22 +962,22 @@ export default function StoryLiveEditor({
                 ) : (
                   <>
                     <h4 className="text-sm font-semibold text-zinc-200">
-                      {profile.rhythm.card1Title || "The Starting Point (04 Mar 2024)"}
+                      {profile.rhythm.card1Title || "Western Ghats Drives & Mountain Air"}
                     </h4>
                     <p className="mt-1 text-xs text-zinc-400">
-                      {profile.rhythm.card1Desc || "Where the commitment began. Deciding to reclaim my health, stamina, and discipline."}
+                      {profile.rhythm.card1Desc || "Belagavi sits right at the threshold of the Western Ghats. Taking peaceful road trips through the misty ghats and pausing at quiet viewpoints is my favorite way to clear my mind."}
                     </p>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Card 2: Six Months Milestone */}
+            {/* Card 2: Fishing 101 */}
             <div className="group relative rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 flex flex-col">
               <div className="relative aspect-[3/4] w-full">
                 <Image
                   src={profile.images.formalWaistcoat}
-                  alt="Transformation milestone"
+                  alt="Coastal fishing hobby"
                   fill
                   sizes="350px"
                   className="object-cover"
@@ -985,7 +985,7 @@ export default function StoryLiveEditor({
                 {isEditMode && (
                   <button
                     type="button"
-                    onClick={() => handleOpenPhotoModal("formalWaistcoat", "Six Months Milestone Photo (12 Sep 2024)")}
+                    onClick={() => handleOpenPhotoModal("formalWaistcoat", "Coastal Fishing Photo")}
                     className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2 cursor-pointer"
                   >
                     <div className="p-2.5 rounded-full bg-emerald-500 text-zinc-950 shadow-lg">
@@ -1003,7 +1003,7 @@ export default function StoryLiveEditor({
                     <input
                       type="text"
                       value={profile.rhythm.card2Title || ""}
-                      placeholder="Six Months of Grit (12 Sep 2024)"
+                      placeholder="Learning the Basics of Fishing (101)"
                       onChange={(e) =>
                         updateField((p) => ({
                           ...p,
@@ -1015,7 +1015,7 @@ export default function StoryLiveEditor({
                     <textarea
                       rows={2}
                       value={profile.rhythm.card2Desc || ""}
-                      placeholder="Proof of follow-through..."
+                      placeholder="Learning the basics of coastal fishing..."
                       onChange={(e) =>
                         updateField((p) => ({
                           ...p,
@@ -1028,22 +1028,22 @@ export default function StoryLiveEditor({
                 ) : (
                   <>
                     <h4 className="text-sm font-semibold text-zinc-200">
-                      {profile.rhythm.card2Title || "Six Months of Grit (12 Sep 2024)"}
+                      {profile.rhythm.card2Title || "Learning the Basics of Fishing (101)"}
                     </h4>
                     <p className="mt-1 text-xs text-zinc-400">
-                      {profile.rhythm.card2Desc || "Proof of follow-through. Not at my absolute peak yet, but living proof that when I take something to heart, I see it through no matter what."}
+                      {profile.rhythm.card2Desc || "I recently learned the 101 basics of fishing during a trip to the coast. Learning to read the water, bait the hook, and wait patiently by the rocks is a hobby I would love to pursue during my coastal trips in the future."}
                     </p>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Card 3: Active Outdoor Living */}
+            {/* Card 3: Coastal Evenings */}
             <div className="group relative rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 flex flex-col">
               <div className="relative aspect-[3/4] w-full">
                 <Image
                   src={profile.images.casualOutdoor}
-                  alt="Active outdoor living"
+                  alt="Coastal sunset"
                   fill
                   sizes="350px"
                   className="object-cover"
@@ -1051,7 +1051,7 @@ export default function StoryLiveEditor({
                 {isEditMode && (
                   <button
                     type="button"
-                    onClick={() => handleOpenPhotoModal("casualOutdoor", "Active Living Photo")}
+                    onClick={() => handleOpenPhotoModal("casualOutdoor", "Coastal Sunset Photo")}
                     className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2 cursor-pointer"
                   >
                     <div className="p-2.5 rounded-full bg-emerald-500 text-zinc-950 shadow-lg">
@@ -1069,7 +1069,7 @@ export default function StoryLiveEditor({
                     <input
                       type="text"
                       value={profile.rhythm.card3Title || ""}
-                      placeholder="Active Living & True Friends"
+                      placeholder="Slow Evenings by the Coast"
                       onChange={(e) =>
                         updateField((p) => ({
                           ...p,
@@ -1081,7 +1081,7 @@ export default function StoryLiveEditor({
                     <textarea
                       rows={2}
                       value={profile.rhythm.card3Desc || ""}
-                      placeholder="Coastal trails, fresh sea breezes..."
+                      placeholder="Watching the sun dip below the horizon..."
                       onChange={(e) =>
                         updateField((p) => ({
                           ...p,
@@ -1094,10 +1094,10 @@ export default function StoryLiveEditor({
                 ) : (
                   <>
                     <h4 className="text-sm font-semibold text-zinc-200">
-                      {profile.rhythm.card3Title || "Active Living & True Friends"}
+                      {profile.rhythm.card3Title || "Slow Evenings by the Coast"}
                     </h4>
                     <p className="mt-1 text-xs text-zinc-400">
-                      {profile.rhythm.card3Desc || "Coastal trails, fresh sea breezes, and genuine friendships that keep life grounded and fun."}
+                      {profile.rhythm.card3Desc || "Watching the sun dip below the horizon with the waves washing over the sand. The coast always reminds me to slow down, breathe, and appreciate simple moments."}
                     </p>
                   </>
                 )}
