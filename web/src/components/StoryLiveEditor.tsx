@@ -752,6 +752,7 @@ export default function StoryLiveEditor({
                       return <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />;
                     case "software_engineering":
                       return <Cpu className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "security_engineering":
                     case "cybersecurity":
                     default:
                       return <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />;
