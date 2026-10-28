@@ -750,6 +750,8 @@ export default function StoryLiveEditor({
                       return <Flame className="w-4 h-4 text-emerald-400 shrink-0" />;
                     case "hsp_empathy":
                       return <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "software_engineering":
+                      return <Cpu className="w-4 h-4 text-emerald-400 shrink-0" />;
                     case "cybersecurity":
                     default:
                       return <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />;

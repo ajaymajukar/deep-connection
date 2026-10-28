@@ -359,25 +359,54 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                 if (activePlatforms.length === 0) return null;
 
                 return (
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {activePlatforms.map((s) => {
-                      const Icon = s.icon;
-                      const url = profile.socials![s.key]!;
-                      const href = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
-                      return (
-                        <a
-                          key={s.key}
-                          href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition group ${s.badgeClass}`}
-                        >
-                          <Icon className={`w-3.5 h-3.5 ${s.color} group-hover:scale-110 transition`} />
-                          <span>{s.label}</span>
-                          <ExternalLink className="w-3 h-3 text-zinc-500" />
-                        </a>
-                      );
-                    })}
+                  <div className="relative pt-1 max-w-md">
+                    <div
+                      className={`flex flex-wrap items-center gap-2 transition-all duration-500 ${
+                        !isPhotoUnlocked
+                          ? "blur-md opacity-30 pointer-events-none select-none"
+                          : "blur-0 opacity-100"
+                      }`}
+                    >
+                      {activePlatforms.map((s) => {
+                        const Icon = s.icon;
+                        const url = profile.socials![s.key]!;
+                        const href =
+                          url.startsWith("http://") || url.startsWith("https://")
+                            ? url
+                            : `https://${url}`;
+                        return (
+                          <a
+                            key={s.key}
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition group ${s.badgeClass}`}
+                          >
+                            <Icon className={`w-3.5 h-3.5 ${s.color} group-hover:scale-110 transition`} />
+                            <span>{s.label}</span>
+                            <ExternalLink className="w-3 h-3 text-zinc-500" />
+                          </a>
+                        );
+                      })}
+                    </div>
+
+                    {!isPhotoUnlocked && (
+                      <button
+                        type="button"
+                        onClick={triggerMutualReveal}
+                        className="absolute inset-0 flex items-center justify-between px-3.5 py-2 rounded-xl bg-zinc-950/85 border border-amber-500/40 hover:border-amber-500/70 hover:bg-zinc-900/90 backdrop-blur-md text-xs font-medium text-zinc-300 shadow-xl group transition cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-sm">
+                            <Lock className="w-3 h-3" />
+                          </span>
+                          <span className="text-zinc-200 font-semibold">Social Profiles Protected</span>
+                        </span>
+                        <span className="text-[11px] font-bold text-emerald-400 group-hover:text-emerald-300 transition flex items-center gap-1">
+                          Mutual Reveal • Unlock <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </button>
+                    )}
                   </div>
                 );
               })()}
@@ -433,6 +462,8 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                       return <Flame className="w-4 h-4 text-emerald-400 shrink-0" />;
                     case "hsp_empathy":
                       return <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />;
+                    case "software_engineering":
+                      return <Cpu className="w-4 h-4 text-emerald-400 shrink-0" />;
                     case "cybersecurity":
                     default:
                       return <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />;
