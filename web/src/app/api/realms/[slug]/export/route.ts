@@ -102,7 +102,7 @@ export async function GET(
         deviceScaleFactor: 2,
       });
 
-      const targetUrl = `${origin}/${slug}/story?export=true&mode=${mode}`;
+      const targetUrl = `${origin}/${slug}/story?export=true&mode=${mode}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
       await page.goto(targetUrl, {
         waitUntil: "networkidle0",
         timeout: 45000,

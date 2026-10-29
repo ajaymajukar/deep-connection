@@ -45,7 +45,25 @@ export async function GET(
           friendsTrip: `/api/realms/${slug}/image?key=friendsTrip&mode=unrevealed`,
           casualOutdoor: `/api/realms/${slug}/image?key=casualOutdoor&mode=unrevealed`,
           formalWaistcoat: `/api/realms/${slug}/image?key=formalWaistcoat&mode=unrevealed`,
-          craftDesk: profile.images.craftDesk || `/images/hacker-desk.jpg`,
+          craftDesk: profile.images.craftDesk
+            ? `/api/realms/${slug}/image?key=craftDesk&mode=unrevealed`
+            : `/images/hacker-desk.jpg`,
+        },
+        craft: {
+          ...profile.craft,
+          cards: (profile.craft?.cards || []).map((card, idx) => ({
+            ...card,
+            image: card.image
+              ? `/api/realms/${slug}/image?section=craft&cardId=${encodeURIComponent(card.id || String(idx))}&mode=unrevealed`
+              : undefined,
+          })),
+        },
+        rhythm: {
+          ...profile.rhythm,
+          extraCards: (profile.rhythm?.extraCards || []).map((card, idx) => ({
+            ...card,
+            image: `/api/realms/${slug}/image?section=rhythm&cardId=${encodeURIComponent(card.id || String(idx))}&mode=unrevealed`,
+          })),
         },
       };
 

@@ -93,8 +93,11 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
 
   // 1. Fetch live dynamic profile for this realm (with unlock token if previously verified)
   useEffect(() => {
+    const adminKey = searchParams?.get("key") || searchParams?.get("token");
     const unlockToken = typeof window !== "undefined" ? sessionStorage.getItem(`unlocked_token_${slug}`) : null;
-    const profileUrl = unlockToken
+    const profileUrl = adminKey
+      ? `/api/realms/${slug}/profile?key=${encodeURIComponent(adminKey)}`
+      : unlockToken
       ? `/api/realms/${slug}/profile?unlockToken=${encodeURIComponent(unlockToken)}`
       : `/api/realms/${slug}/profile`;
 
@@ -106,7 +109,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
         }
       })
       .catch((err) => console.warn("Using fallback profile:", err));
-  }, [slug]);
+  }, [slug, searchParams]);
 
   // 2. Track initial page view via headers & document.referrer (No ?ref needed!)
   useEffect(() => {

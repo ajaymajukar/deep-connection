@@ -21,6 +21,9 @@ export async function GET(
     const { searchParams } = new URL(req.url);
 
     const imageKey = searchParams.get("key") || "hero"; // "hero" | "friendsTrip" | "casualOutdoor" | "formalWaistcoat" | "craftDesk"
+    const section = searchParams.get("section");
+    const cardId = searchParams.get("cardId");
+    const cardIndex = searchParams.get("cardIndex");
     const requestedMode = searchParams.get("mode") === "revealed" ? "revealed" : "unrevealed";
     const token =
       req.headers.get("authorization")?.replace("Bearer ", "") ||
@@ -33,7 +36,25 @@ export async function GET(
     }
 
     const profile = await getRealmProfile(slug);
-    const rawImageSource: string | undefined = (profile.images as Record<string, string>)[imageKey];
+    let rawImageSource: string | undefined;
+
+    if (section === "rhythm") {
+      const extraCards = profile.rhythm?.extraCards || [];
+      const card =
+        (cardId ? extraCards.find((c) => c.id === cardId) : null) ||
+        (cardIndex !== null && !isNaN(parseInt(cardIndex, 10)) ? extraCards[parseInt(cardIndex, 10)] : null) ||
+        extraCards.find((_, i) => String(i) === cardId);
+      rawImageSource = card?.image;
+    } else if (section === "craft") {
+      const craftCards = profile.craft?.cards || [];
+      const card =
+        (cardId ? craftCards.find((c) => c.id === cardId) : null) ||
+        (cardIndex !== null && !isNaN(parseInt(cardIndex, 10)) ? craftCards[parseInt(cardIndex, 10)] : null) ||
+        craftCards.find((_, i) => String(i) === cardId);
+      rawImageSource = card?.image;
+    } else {
+      rawImageSource = (profile.images as Record<string, string>)[imageKey];
+    }
 
     if (!rawImageSource) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
