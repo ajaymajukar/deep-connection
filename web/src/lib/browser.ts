@@ -10,10 +10,15 @@ export async function getBrowser(): Promise<Browser> {
   if (isServerless) {
     // Dynamic import to avoid local compilation problems
     const chromium = (await import("@sparticuz/chromium-min")).default;
+    const isArm = process.arch === "arm64";
+    const packUrl = isArm
+      ? "https://github.com/Sparticuz/chromium/releases/download/v153.0.0/chromium-v153.0.0-pack.arm64.tar"
+      : "https://github.com/Sparticuz/chromium/releases/download/v153.0.0/chromium-v153.0.0-pack.x64.tar";
+
     return await puppeteer.launch({
       args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
       defaultViewport: { width: 1080, height: 1920 },
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(packUrl),
       headless: true,
     });
   }
