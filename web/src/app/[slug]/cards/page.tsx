@@ -35,6 +35,19 @@ export default async function RealmCardsPage({
     console.warn("Failed to load profile for cards, using default:", e);
   }
 
+  // Enforce server-side physical blur: when unrevealed, use the server-blurred raster
+  const heroImage = isRevealed
+    ? profile.images.hero
+    : `/api/realms/${slug}/image?key=hero&mode=unrevealed`;
+
+  const friendsTripImage = isRevealed
+    ? profile.images.friendsTrip
+    : `/api/realms/${slug}/image?key=friendsTrip&mode=unrevealed`;
+
+  const secondaryLifestyleImage = isRevealed
+    ? profile.images.formalWaistcoat || profile.images.casualOutdoor
+    : `/api/realms/${slug}/image?key=formalWaistcoat&mode=unrevealed`;
+
   return (
     <div className="bg-zinc-950 text-zinc-100 flex flex-col items-center gap-12 py-8 min-h-screen">
       {/* CARD 1: INTRO & VIBE (1080 x 1920) */}
@@ -71,7 +84,7 @@ export default async function RealmCardsPage({
         <div className="relative w-full aspect-[4/3] rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-2xl my-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={profile.images.hero}
+            src={heroImage}
             alt={profile.name}
             className={`w-full h-full object-cover ${
               isRevealed ? "blur-0 scale-100" : "blur-3xl scale-110"
@@ -341,7 +354,7 @@ export default async function RealmCardsPage({
           <div className="relative aspect-[3/4] rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={profile.images.friendsTrip}
+              src={friendsTripImage}
               alt="Western Ghats Drive"
               className={`w-full h-full object-cover ${
                 isRevealed ? "blur-0 scale-100" : "blur-3xl scale-110"
@@ -364,7 +377,7 @@ export default async function RealmCardsPage({
           <div className="relative aspect-[3/4] rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={profile.images.formalWaistcoat || profile.images.casualOutdoor}
+              src={secondaryLifestyleImage}
               alt="Rituals & Gatherings"
               className={`w-full h-full object-cover ${
                 isRevealed ? "blur-0 scale-100" : "blur-3xl scale-110"

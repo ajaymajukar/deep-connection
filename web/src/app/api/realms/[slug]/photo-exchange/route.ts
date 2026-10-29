@@ -8,6 +8,8 @@ import {
 } from "@/lib/realms";
 import { sendAlertToAjay, sendCustomRealmAlert } from "@/lib/mailer";
 import sharp from "sharp";
+import redis from "@/lib/redis";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -183,17 +185,43 @@ export async function POST(
       }
     }
 
-    // 3. Return unlocked private album to the visitor
+    // 3. Issue cryptographically secure unlock token in Redis (30-day validity)
+    const unlockToken = crypto.randomUUID();
+    try {
+      await redis.set(
+        `realm:${slug}:unlocked:${unlockToken}`,
+        {
+          email: email.trim().toLowerCase(),
+          name: name.trim(),
+          timestamp: Date.now(),
+        },
+        { ex: 86400 * 30 }
+      );
+    } catch (redisErr) {
+      console.warn("Could not persist unlock token in Redis:", redisErr);
+    }
+
+    // 4. Return unlocked private album and token to the visitor
     const album = await getRealmPrivateAlbum(slug);
     const photosToReturn = album && album.enabled && Array.isArray(album.photos) ? album.photos : [];
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       unlocked: true,
+      unlockToken,
       message: `Thank you, ${name.trim()}! Photo exchanged successfully.`,
       album: photosToReturn,
       id: saved.id,
     });
+
+    // Set secure cookie so subsequent profile & image requests receive revealed photos
+    response.cookies.set(`unlocked_token_${slug}`, unlockToken, {
+      path: "/",
+      maxAge: 86400 * 30,
+      sameSite: "lax",
+    });
+
+    return response;
   } catch (error) {
     console.error("Error in photo exchange submission:", error);
     return NextResponse.json({ success: false, error: "Failed to exchange photo." }, { status: 500 });

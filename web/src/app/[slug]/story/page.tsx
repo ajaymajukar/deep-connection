@@ -54,25 +54,51 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
     }
     try {
       const stored = sessionStorage.getItem(`unlocked_album_${slug}`);
-      if (stored) {
+      const storedToken = sessionStorage.getItem(`unlocked_token_${slug}`);
+      if (stored || storedToken) {
         setIsPhotoUnlocked(true);
       }
     } catch {
       // Ignore
     }
 
-    const handleUnlocked = () => setIsPhotoUnlocked(true);
+    const handleUnlocked = (e: any) => {
+      setIsPhotoUnlocked(true);
+      const token = e.detail?.unlockToken;
+      if (token) {
+        try {
+          sessionStorage.setItem(`unlocked_token_${slug}`, token);
+        } catch {
+          // Ignore
+        }
+        // Refetch profile with unlock token so server provides crystal-clear photo URLs
+        fetch(`/api/realms/${slug}/profile?unlockToken=${encodeURIComponent(token)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data && data.name) {
+              setProfile(data);
+            }
+          })
+          .catch((err) => console.warn("Failed to refetch revealed profile:", err));
+      }
+    };
+
     window.addEventListener("mutual-reveal-unlocked", handleUnlocked);
     return () => window.removeEventListener("mutual-reveal-unlocked", handleUnlocked);
-  }, [slug]);
+  }, [slug, isExport, exportMode]);
 
   const triggerMutualReveal = () => {
     window.dispatchEvent(new CustomEvent("open-mutual-reveal"));
   };
 
-  // 1. Fetch live dynamic profile for this realm
+  // 1. Fetch live dynamic profile for this realm (with unlock token if previously verified)
   useEffect(() => {
-    fetch(`/api/realms/${slug}/profile`)
+    const unlockToken = typeof window !== "undefined" ? sessionStorage.getItem(`unlocked_token_${slug}`) : null;
+    const profileUrl = unlockToken
+      ? `/api/realms/${slug}/profile?unlockToken=${encodeURIComponent(unlockToken)}`
+      : `/api/realms/${slug}/profile`;
+
+    fetch(profileUrl)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.name) {

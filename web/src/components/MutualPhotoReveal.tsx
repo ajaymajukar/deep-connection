@@ -194,12 +194,17 @@ export default function MutualPhotoReveal({
       // Save unlock state in sessionStorage
       try {
         sessionStorage.setItem(`unlocked_album_${slug}`, JSON.stringify(receivedAlbum));
+        if (data.unlockToken) {
+          sessionStorage.setItem(`unlocked_token_${slug}`, data.unlockToken);
+        }
       } catch {
         // Fallback
       }
 
       window.dispatchEvent(
-        new CustomEvent("mutual-reveal-unlocked", { detail: { album: receivedAlbum } })
+        new CustomEvent("mutual-reveal-unlocked", {
+          detail: { album: receivedAlbum, unlockToken: data.unlockToken },
+        })
       );
 
       // Celebratory Confetti!

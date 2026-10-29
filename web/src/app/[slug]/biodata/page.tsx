@@ -32,6 +32,19 @@ export default async function RealmBiodataPage({
     console.warn("Failed to load profile for biodata, using default:", e);
   }
 
+  // Enforce server-side physical blur: when unrevealed, use the server-blurred raster
+  const heroImage = isRevealed
+    ? profile.images.hero
+    : `/api/realms/${slug}/image?key=hero&mode=unrevealed`;
+
+  const friendsTripImage = isRevealed
+    ? profile.images.friendsTrip
+    : `/api/realms/${slug}/image?key=friendsTrip&mode=unrevealed`;
+
+  const secondaryLifestyleImage = isRevealed
+    ? profile.images.formalWaistcoat || profile.images.casualOutdoor
+    : `/api/realms/${slug}/image?key=formalWaistcoat&mode=unrevealed`;
+
   return (
     <div className="bg-zinc-950 text-zinc-100 min-h-screen py-10 px-4 print:p-0 print:bg-zinc-950 flex flex-col items-center">
       <style>{`
@@ -85,7 +98,7 @@ export default async function RealmBiodataPage({
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={profile.images.hero}
+                  src={heroImage}
                   alt={profile.name}
                   className={`w-full h-full object-cover ${
                     isRevealed ? "blur-0" : "blur-2xl scale-110"
@@ -247,7 +260,7 @@ export default async function RealmBiodataPage({
               <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={profile.images.friendsTrip}
+                  src={friendsTripImage}
                   alt="Western Ghats Drive"
                   className={`w-full h-full object-cover ${
                     isRevealed ? "blur-0" : "blur-2xl scale-110"
@@ -269,7 +282,7 @@ export default async function RealmBiodataPage({
               <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={profile.images.formalWaistcoat || profile.images.casualOutdoor}
+                  src={secondaryLifestyleImage}
                   alt="Downtime"
                   className={`w-full h-full object-cover ${
                     isRevealed ? "blur-0" : "blur-2xl scale-110"
