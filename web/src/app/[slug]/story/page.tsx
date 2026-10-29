@@ -30,13 +30,16 @@ import { DEFAULT_PROFILE, ProfileConfig, getGenericStarterProfile } from "@/lib/
 function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: string }> }) {
   const { slug } = use(paramsPromise);
   const searchParams = useSearchParams();
+  const isExport = searchParams?.get("export") === "true";
+  const exportMode = searchParams?.get("mode");
+
   const [profile, setProfile] = useState<ProfileConfig>(() =>
     slug === "ajay" ? DEFAULT_PROFILE : getGenericStarterProfile(slug)
   );
-  const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [isVerified, setIsVerified] = useState<boolean>(() => Boolean(isExport || searchParams?.get("preview") === "true"));
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
-  const [isPhotoUnlocked, setIsPhotoUnlocked] = useState<boolean>(false);
+  const [isPhotoUnlocked, setIsPhotoUnlocked] = useState<boolean>(() => Boolean(isExport && exportMode === "revealed"));
 
   const dwellTimesRef = useRef<Record<string, number>>({});
   const activeSectionsRef = useRef<Set<string>>(new Set());
@@ -44,6 +47,11 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
 
   // Check if visitor has already completed mutual reveal
   useEffect(() => {
+    if (isExport) {
+      setIsVerified(true);
+      setIsPhotoUnlocked(exportMode === "revealed");
+      return;
+    }
     try {
       const stored = sessionStorage.getItem(`unlocked_album_${slug}`);
       if (stored) {
@@ -191,7 +199,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30 selection:text-emerald-200">
       {/* Bot Check Gate */}
-      {!isVerified && (
+      {!isVerified && !isExport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/95 backdrop-blur-md">
           <div className="w-full max-w-md p-8 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
@@ -229,7 +237,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
 
       {/* Main Story Container */}
       <div className={`transition-opacity duration-700 ${isVerified ? "opacity-100" : "opacity-20 blur-sm pointer-events-none"}`}>
-        <header className="sticky top-0 z-40 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-900">
+        <header className={`sticky top-0 z-40 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-900 ${isExport ? "hidden" : ""}`}>
           <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-lg font-bold tracking-tight text-zinc-100">

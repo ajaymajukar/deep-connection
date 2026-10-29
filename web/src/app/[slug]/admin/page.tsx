@@ -25,7 +25,11 @@ import {
   ChevronDown,
   Key,
   Camera,
-  X
+  X,
+  Share2,
+  Layers,
+  FileText,
+  Unlock,
 } from "lucide-react";
 import Image from "next/image";
 import { ProfileConfig, DEFAULT_PROFILE, getGenericStarterProfile } from "@/lib/profile";
@@ -73,7 +77,7 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Active view tab: visual editor by default!
-  const [activeTab, setActiveTab] = useState<"editor" | "analytics" | "llm" | "inbox" | "settings">("editor");
+  const [activeTab, setActiveTab] = useState<"editor" | "export" | "analytics" | "llm" | "inbox" | "settings">("editor");
 
   const [analytics, setAnalytics] = useState<RealmAnalyticsData | null>(null);
   const [profile, setProfile] = useState<ProfileConfig>(() =>
@@ -82,6 +86,11 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
   const [isLoading, setIsLoading] = useState(false);
   const [copiedLLM, setCopiedLLM] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+
+  // Server-Side Export States
+  const [exportMode, setExportMode] = useState<"unrevealed" | "revealed">("unrevealed");
+  const [exportLoading, setExportLoading] = useState<string | null>(null);
+  const [copiedRedditPitch, setCopiedRedditPitch] = useState<boolean>(false);
 
   // Deletion state
   const [deleteConfirmSlug, setDeleteConfirmSlug] = useState("");
@@ -267,6 +276,41 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
     URL.revokeObjectURL(url);
   };
 
+  const handleExportDownload = async (format: "deck" | "infographic" | "pdf") => {
+    if (!token) return;
+    setExportLoading(format);
+    try {
+      const url = `/api/realms/${slug}/export?format=${format}&mode=${exportMode}&token=${encodeURIComponent(token)}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || "Failed to generate export");
+      }
+
+      const blob = await res.blob();
+      const ext = format === "deck" ? "zip" : format === "infographic" ? "png" : "pdf";
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${slug}-${format === "deck" ? "story-deck" : format === "infographic" ? "infographic" : "biodata"}-${exportMode}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      alert(`Export generation failed: ${err?.message || String(err)}`);
+    } finally {
+      setExportLoading(null);
+    }
+  };
+
+  const handleCopyRedditPitch = () => {
+    const pitch = `Hey! I know sharing external links on Reddit feels super sketchy with all the random IP loggers and phishers floating around, so I just snapshotted my portfolio deck into a quick 3-slide image instead.\n\n(I've kept my face blurred for privacy until we mutually exchange, but my story, craft, and what I'm looking for are all here. Have a look! 😊)`;
+    navigator.clipboard.writeText(pitch);
+    setCopiedRedditPitch(true);
+    setTimeout(() => setCopiedRedditPitch(false), 2500);
+  };
+
   const handleDeleteRealm = async () => {
     if (deleteConfirmSlug.trim().toLowerCase() !== slug.toLowerCase()) {
       setDeleteError(`Please type "${slug}" to confirm.`);
@@ -420,6 +464,17 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
           </button>
 
           <button
+            onClick={() => setActiveTab("export")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "export"
+                ? "bg-emerald-500 text-zinc-950 font-bold shadow"
+                : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Share2 className="w-3.5 h-3.5" /> Shareable Decks & PDF Export
+          </button>
+
+          <button
             onClick={() => setActiveTab("analytics")}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === "analytics"
@@ -477,7 +532,309 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
         />
       )}
 
-      {/* 2. Attention & Dwell Heatmap */}
+      {/* 2. Shareable Decks & PDF Export */}
+      {activeTab === "export" && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-in fade-in duration-300">
+          {/* Header Banner */}
+          <div className="p-8 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-zinc-900/80 to-zinc-950 border border-emerald-500/30 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <Sparkles className="w-3.5 h-3.5" /> Server-Side Chromium 2x Retina Rendering
+              </span>
+              <h3 className="text-2xl font-bold tracking-tight text-zinc-100">
+                Shareable Dating Decks &amp; PDF Exports
+              </h3>
+              <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+                Send your story directly into Reddit chat, Instagram DM, or WhatsApp as native image slides or documents. Completely eliminates link hesitation, fears of IP grabbers, and phishing warnings.
+              </p>
+            </div>
+
+            {/* Quick Preview Links */}
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <Link
+                href={`/${slug}/cards?mode=${exportMode}`}
+                target="_blank"
+                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700 transition flex items-center gap-1.5"
+              >
+                <Layers className="w-3.5 h-3.5 text-emerald-400" /> Preview Cards <ExternalLink className="w-3 h-3 text-zinc-500" />
+              </Link>
+              <Link
+                href={`/${slug}/biodata?mode=${exportMode}`}
+                target="_blank"
+                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700 transition flex items-center gap-1.5"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-400" /> Preview Biodata <ExternalLink className="w-3 h-3 text-zinc-500" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Privacy Mode Selector */}
+          <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+                  Select Privacy Level for Export
+                </h4>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Choose whether your photos will have the aesthetic frosted-glass lock or be fully revealed.
+                </p>
+              </div>
+
+              {/* Segmented Control */}
+              <div className="inline-flex p-1.5 rounded-2xl bg-zinc-950 border border-zinc-800 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setExportMode("unrevealed")}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                    exportMode === "unrevealed"
+                      ? "bg-amber-500 text-zinc-950 shadow-md font-bold"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  🔒 Unrevealed (Privacy Protected)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportMode("revealed")}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                    exportMode === "revealed"
+                      ? "bg-emerald-500 text-zinc-950 shadow-md font-bold"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <Unlock className="w-3.5 h-3.5" />
+                  🔓 Revealed (Full Access)
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800 text-xs text-zinc-300 flex items-center gap-3">
+              {exportMode === "unrevealed" ? (
+                <>
+                  <div className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <span>
+                    <strong>Unrevealed Active:</strong> Face &amp; candid lifestyle photos are frosted with a stylish lock badge. Full bio, craft, and vision are crystal clear. Perfect for Reddit outreach to spark interest while maintaining equal privacy.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <div className="w-7 h-7 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+                    <Unlock className="w-3.5 h-3.5" />
+                  </div>
+                  <span>
+                    <strong>Revealed Active:</strong> All photos are crystal-clear high-definition with zero blur. Send this immediately after she shares hers to fulfill the reciprocal exchange!
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* The 3 Export Action Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1: Story Deck (ZIP) */}
+            <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 flex flex-col justify-between hover:border-zinc-700 transition">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <Layers className="w-6 h-6" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    ⭐ Best for Reddit
+                  </span>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-bold text-zinc-100">
+                    4-Card Story Deck
+                  </h4>
+                  <p className="text-xs text-emerald-400 font-medium mt-0.5">
+                    ZIP of 4 PNG Cards • 1080×1920 (9:16)
+                  </p>
+                </div>
+
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Engineered specifically for smartphone screens. Drop all 4 cards into Reddit Chat, WhatsApp, or Instagram DM to form an instant swipeable story carousel.
+                </p>
+
+                <div className="space-y-1.5 text-[11px] text-zinc-400 border-t border-zinc-800 pt-3">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Card 1: Intro &amp; Vibe
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Card 2: Craft &amp; Mindset
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Card 3: Partnership Vision
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Card 4: Rhythm &amp; Downtime
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <button
+                  type="button"
+                  disabled={Boolean(exportLoading)}
+                  onClick={() => handleExportDownload("deck")}
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10 disabled:opacity-50"
+                >
+                  <Download className={`w-4 h-4 ${exportLoading === "deck" ? "animate-bounce" : ""}`} />
+                  {exportLoading === "deck"
+                    ? "Rendering Deck via Chromium..."
+                    : `Download ${exportMode === "unrevealed" ? "Unrevealed" : "Revealed"} Deck (.zip)`}
+                </button>
+              </div>
+            </div>
+
+            {/* Card 2: Single-Page Infographic */}
+            <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 flex flex-col justify-between hover:border-zinc-700 transition">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                    <Download className="w-6 h-6" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                    Single Long Scroll
+                  </span>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-bold text-zinc-100">
+                    Single Infographic Scroll
+                  </h4>
+                  <p className="text-xs text-cyan-400 font-medium mt-0.5">
+                    Continuous High-Res PNG • 1200px Wide
+                  </p>
+                </div>
+
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  The complete profile story seamlessly captured from top to bottom as one high-definition vertical infographic graphic.
+                </p>
+
+                <div className="space-y-1.5 text-[11px] text-zinc-400 border-t border-zinc-800 pt-3">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-cyan-400" /> Full Story top-to-bottom
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-cyan-400" /> 2x Device Scale Pixel Sharpness
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-cyan-400" /> Native visual styling preserved
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <button
+                  type="button"
+                  disabled={Boolean(exportLoading)}
+                  onClick={() => handleExportDownload("infographic")}
+                  className="w-full py-3 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/10 disabled:opacity-50"
+                >
+                  <Download className={`w-4 h-4 ${exportLoading === "infographic" ? "animate-bounce" : ""}`} />
+                  {exportLoading === "infographic"
+                    ? "Rendering Infographic..."
+                    : `Download ${exportMode === "unrevealed" ? "Unrevealed" : "Revealed"} Scroll (.png)`}
+                </button>
+              </div>
+            </div>
+
+            {/* Card 3: Biodata Portfolio PDF */}
+            <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 flex flex-col justify-between hover:border-zinc-700 transition">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                    A4 Print Document
+                  </span>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-bold text-zinc-100">
+                    Biodata Portfolio PDF
+                  </h4>
+                  <p className="text-xs text-purple-400 font-medium mt-0.5">
+                    Print-Ready Vector PDF • 2 Pages A4
+                  </p>
+                </div>
+
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Clean editorial layout formatted with precise A4 page breaks. Features crisp vector typography, executive spec table, and life rhythm pillars.
+                </p>
+
+                <div className="space-y-1.5 text-[11px] text-zinc-400 border-t border-zinc-800 pt-3">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-purple-400" /> Vector text with infinite zoom
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-purple-400" /> Ideal for WhatsApp docs &amp; matrimony
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-purple-400" /> Standardized 2-page pagination
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <button
+                  type="button"
+                  disabled={Boolean(exportLoading)}
+                  onClick={() => handleExportDownload("pdf")}
+                  className="w-full py-3 px-4 rounded-xl bg-purple-500 hover:bg-purple-400 text-zinc-950 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-purple-500/10 disabled:opacity-50"
+                >
+                  <Download className={`w-4 h-4 ${exportLoading === "pdf" ? "animate-bounce" : ""}`} />
+                  {exportLoading === "pdf"
+                    ? "Generating A4 Vector PDF..."
+                    : `Download ${exportMode === "unrevealed" ? "Unrevealed" : "Revealed"} Biodata (.pdf)`}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* High-EQ Reddit Opening Copy Banner */}
+          <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-emerald-400" />
+                  Recommended Reddit DM Opening Script
+                </h4>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Send this alongside your 4 Story Deck cards in chat. It immediately disarms suspicion, validates her security concerns, and frames reciprocity naturally.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCopyRedditPitch}
+                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition flex items-center gap-2 cursor-pointer shrink-0 border border-zinc-700"
+              >
+                {copiedRedditPitch ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied to Clipboard!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-zinc-400" /> Copy Opening Script
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 font-mono text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
+              {`Hey! I know sharing external links on Reddit feels super sketchy with all the random IP loggers and phishers floating around, so I just snapshotted my portfolio deck into a quick 3-slide image instead.\n\n(I've kept my face blurred for privacy until we mutually exchange, but my story, craft, and what I'm looking for are all here. Have a look! 😊)`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Attention & Dwell Heatmap */}
       {activeTab === "analytics" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-in fade-in duration-300">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
