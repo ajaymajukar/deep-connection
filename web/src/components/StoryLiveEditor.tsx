@@ -1101,7 +1101,7 @@ export default function StoryLiveEditor({
               <div className="relative aspect-[3/4] w-full">
                 <Image
                   src={profile.images.friendsTrip}
-                  alt="Outdoor friends"
+                  alt={profile.rhythm.card1Title || "Lifestyle moment"}
                   fill
                   sizes="350px"
                   className="object-cover"
@@ -1109,7 +1109,7 @@ export default function StoryLiveEditor({
                 {isEditMode && (
                   <button
                     type="button"
-                    onClick={() => handleOpenPhotoModal("friendsTrip", "The Starting Point Photo (04 Mar 2024)")}
+                    onClick={() => handleOpenPhotoModal("friendsTrip", profile.rhythm.card1Title || "Life Rhythm Photo 1")}
                     className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2 cursor-pointer"
                   >
                     <div className="p-2.5 rounded-full bg-emerald-500 text-zinc-950 shadow-lg">
@@ -1233,7 +1233,7 @@ export default function StoryLiveEditor({
               <div className="relative aspect-[3/4] w-full">
                 <Image
                   src={profile.images.casualOutdoor}
-                  alt="Coastal sunset"
+                  alt={profile.rhythm.card3Title || "Travel & downtime"}
                   fill
                   sizes="350px"
                   className="object-cover"
@@ -1241,7 +1241,7 @@ export default function StoryLiveEditor({
                 {isEditMode && (
                   <button
                     type="button"
-                    onClick={() => handleOpenPhotoModal("casualOutdoor", "Coastal Sunset Photo")}
+                    onClick={() => handleOpenPhotoModal("casualOutdoor", profile.rhythm.card3Title || "Life Rhythm Photo 3")}
                     className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2 cursor-pointer"
                   >
                     <div className="p-2.5 rounded-full bg-emerald-500 text-zinc-950 shadow-lg">

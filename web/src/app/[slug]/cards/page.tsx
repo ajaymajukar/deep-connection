@@ -340,7 +340,7 @@ export default async function RealmCardsPage({
             </span>
           </div>
           <span className="px-5 py-2 rounded-full text-lg font-medium bg-zinc-900 border border-zinc-800 text-zinc-300">
-            Western Ghats & Travel
+            Travel &amp; Life Rhythm
           </span>
         </div>
 
@@ -353,7 +353,7 @@ export default async function RealmCardsPage({
             {profile.rhythm.title || "Visual Rhythm & Quiet Hours"}
           </h2>
           <p className="text-2xl text-zinc-400 leading-relaxed">
-            {profile.rhythm.subtitle || "Road trips into the misty ghats, fresh morning air, and simple unhurried conversations."}
+            {profile.rhythm.subtitle || "Intentional travel, coastal roots, and unhurried conversations."}
           </p>
         </div>
 
@@ -363,7 +363,7 @@ export default async function RealmCardsPage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={friendsTripImage}
-              alt="Western Ghats Drive"
+              alt={profile.rhythm.card1Title || "Lifestyle Moment"}
               className={`w-full h-full object-cover ${
                 isRevealed ? "blur-0 scale-100" : "blur-3xl scale-110"
               }`}
@@ -377,7 +377,7 @@ export default async function RealmCardsPage({
               </div>
             ) : (
               <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-zinc-950/80 backdrop-blur-sm text-sm text-zinc-300">
-                Western Ghats drives & misty mountain viewpoints
+                {profile.rhythm.card1Title || "Weekend trips & quiet discoveries"}
               </div>
             )}
           </div>
@@ -386,7 +386,7 @@ export default async function RealmCardsPage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={secondaryLifestyleImage}
-              alt="Rituals & Gatherings"
+              alt={profile.rhythm.card3Title || "Travel & Downtime"}
               className={`w-full h-full object-cover ${
                 isRevealed ? "blur-0 scale-100" : "blur-3xl scale-110"
               }`}
@@ -400,7 +400,7 @@ export default async function RealmCardsPage({
               </div>
             ) : (
               <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-zinc-950/80 backdrop-blur-sm text-sm text-zinc-300">
-                Quiet downtime & meaningful celebrations
+                {profile.rhythm.card3Title || profile.rhythm.card2Title || "Quiet downtime & meaningful moments"}
               </div>
             )}
           </div>
@@ -409,10 +409,10 @@ export default async function RealmCardsPage({
         {/* Highlight Description */}
         <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800/80">
           <h4 className="text-2xl font-bold text-zinc-100">
-            {profile.rhythm.highlightTitle || "Belagavi & Ghats Threshold"}
+            {profile.rhythm.highlightTitle || "Roots, Travel & Perspective"}
           </h4>
           <p className="mt-2 text-xl text-zinc-400 leading-relaxed">
-            {profile.rhythm.highlightDesc || "Living at the foothills of the Western Ghats means clean air, endless trails, and peaceful road trips whenever I need to recharge."}
+            {profile.rhythm.highlightDesc || "A calm home base paired with curious travel keeps work and life well balanced."}
           </p>
         </div>
 

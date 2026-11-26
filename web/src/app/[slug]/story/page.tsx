@@ -714,7 +714,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               <div className="relative aspect-[3/4] w-full">
                 <Image
                   src={profile.images.friendsTrip}
-                  alt="Western Ghats and outdoor life"
+                  alt={profile.rhythm.card1Title || "Lifestyle and family moments"}
                   fill
                   sizes="350px"
                   className={`object-cover transition-all duration-700 ${
@@ -748,7 +748,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               <div className="relative aspect-[3/4] w-full">
                 <Image
                   src={profile.images.formalWaistcoat}
-                  alt="Transformation milestone"
+                  alt={profile.rhythm.card2Title || "Coastal hobby"}
                   fill
                   sizes="350px"
                   className={`object-cover transition-all duration-700 ${
@@ -782,7 +782,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               <div className="relative aspect-[3/4] w-full">
                 <Image
                   src={profile.images.casualOutdoor}
-                  alt="Active coastal travels"
+                  alt={profile.rhythm.card3Title || "Work travel and downtime"}
                   fill
                   sizes="350px"
                   className={`object-cover transition-all duration-700 ${

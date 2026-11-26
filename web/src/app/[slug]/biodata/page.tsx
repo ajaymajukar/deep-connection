@@ -269,7 +269,7 @@ export default async function RealmBiodataPage({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={friendsTripImage}
-                  alt="Western Ghats Drive"
+                  alt={profile.rhythm.card1Title || "Lifestyle Moment"}
                   className={`w-full h-full object-cover ${
                     isRevealed ? "blur-0" : "blur-2xl scale-110"
                   }`}
@@ -277,12 +277,14 @@ export default async function RealmBiodataPage({
                 {!isRevealed ? (
                   <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center">
                     <Lock className="w-5 h-5 text-amber-400 mb-1" />
-                    <span className="text-[11px] font-semibold text-zinc-300">Western Ghats</span>
+                    <span className="text-[11px] font-semibold text-zinc-300">
+                      {profile.rhythm.card1Title || "Lifestyle Moment"}
+                    </span>
                     <span className="text-[9px] text-zinc-500">Mutual exchange</span>
                   </div>
                 ) : (
                   <div className="absolute bottom-2 left-2 right-2 px-2 py-1 rounded bg-zinc-950/80 backdrop-blur-sm text-[10px] text-zinc-300">
-                    Western Ghats drives & viewpoint trails
+                    {profile.rhythm.card1Title || "Weekend trips & meaningful moments"}
                   </div>
                 )}
               </div>
@@ -291,7 +293,7 @@ export default async function RealmBiodataPage({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={secondaryLifestyleImage}
-                  alt="Downtime"
+                  alt={profile.rhythm.card3Title || "Travel & Downtime"}
                   className={`w-full h-full object-cover ${
                     isRevealed ? "blur-0" : "blur-2xl scale-110"
                   }`}
@@ -299,12 +301,14 @@ export default async function RealmBiodataPage({
                 {!isRevealed ? (
                   <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center">
                     <Lock className="w-5 h-5 text-amber-400 mb-1" />
-                    <span className="text-[11px] font-semibold text-zinc-300">Quiet Downtime</span>
+                    <span className="text-[11px] font-semibold text-zinc-300">
+                      {profile.rhythm.card3Title || "Quiet Travel"}
+                    </span>
                     <span className="text-[9px] text-zinc-500">Mutual exchange</span>
                   </div>
                 ) : (
                   <div className="absolute bottom-2 left-2 right-2 px-2 py-1 rounded bg-zinc-950/80 backdrop-blur-sm text-[10px] text-zinc-300">
-                    Meaningful celebrations & simple rituals
+                    {profile.rhythm.card3Title || profile.rhythm.card2Title || "Quiet downtime & simple rituals"}
                   </div>
                 )}
               </div>
@@ -312,10 +316,10 @@ export default async function RealmBiodataPage({
 
             <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800">
               <h4 className="text-xs font-semibold text-zinc-200">
-                {profile.rhythm.highlightTitle || "Belagavi & Ghats Threshold"}
+                {profile.rhythm.highlightTitle || "Roots, Travel & Perspective"}
               </h4>
               <p className="mt-1 text-[11px] text-zinc-400 leading-relaxed">
-                {profile.rhythm.highlightDesc || "Living at the threshold of the Western Ghats provides the perfect balance of focused quiet work and open nature."}
+                {profile.rhythm.highlightDesc || "A calm home base paired with curious travel provides the right balance of focused work and time offline."}
               </p>
             </div>
           </div>
