@@ -649,10 +649,10 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
-                  {profile.rhythm.card3Title || "Slow Evenings by the Coast"}
+                  {profile.rhythm.card3Title || "Space to Think & Quiet Travel"}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {profile.rhythm.card3Desc || "Watching the sun dip below the horizon with the waves washing over the sand. The coast always reminds me to slow down, breathe, and appreciate simple moments."}
+                  {profile.rhythm.card3Desc || "Looking out over the cloudscape between deep-focus work blocks. Taking time to disconnect, travel, and let my mind wander keeps me grounded and creative."}
                 </p>
               </div>
             </div>
