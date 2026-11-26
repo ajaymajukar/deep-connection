@@ -25,12 +25,17 @@ import {
   Plus,
   Trash2,
   Download,
-  Upload
+  Upload,
+  Clock
 } from "lucide-react";
 import { SOCIAL_CONFIGS } from "@/components/SocialIcons";
 import { ProfileConfig } from "@/lib/profile";
 import PhotoEditorModal from "./PhotoEditorModal";
 import ImportFromLLMModal from "./ImportFromLLMModal";
+import VoiceNoteStudio from "./VoiceNoteStudio";
+import VoiceIntroPlayer from "./VoiceIntroPlayer";
+import SundayRitualSection from "./SundayRitualSection";
+import ValuesMirrorSection from "./ValuesMirrorSection";
 
 export { SOCIAL_CONFIGS };
 
@@ -661,6 +666,30 @@ export default function StoryLiveEditor({
                 )}
               </div>
 
+              {/* Voice Note Studio (Edit Mode) / Player (Preview Mode) */}
+              <div className="pt-2">
+                {isEditMode ? (
+                  <VoiceNoteStudio
+                    key={`${slug}_${profile.name}_${profile.voiceNote?.hasAudio ? "live" : "empty"}`}
+                    slug={slug}
+                    token={token}
+                    ownerName={profile.name}
+                    voiceNote={profile.voiceNote}
+                    onVoiceUpdated={(nextVoice) => {
+                      setProfile((prev) => ({ ...prev, voiceNote: nextVoice }));
+                    }}
+                  />
+                ) : (
+                  <VoiceIntroPlayer
+                    slug={slug}
+                    ownerName={profile.name}
+                    voiceNote={profile.voiceNote}
+                    isUnlocked={true}
+                    onRequestUnlock={() => {}}
+                  />
+                )}
+              </div>
+
             </div>
           </div>
         </section>
@@ -863,6 +892,164 @@ export default function StoryLiveEditor({
               )}
             </div>
           </div>
+        </section>
+
+        {/* Section 1.5: The Sunday Test Editor / Live Preview */}
+        <section className="py-16 border-t border-zinc-900">
+          {isEditMode ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4" /> The Sunday Test Vignette (Interactive Timeline)
+                  </span>
+                  <p className="text-xs text-zinc-400">
+                    Show what an actual unhurried Sunday in your world feels like.
+                  </p>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer select-none px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800">
+                  <input
+                    type="checkbox"
+                    checked={profile.sundayRitual?.enabled !== false}
+                    onChange={(e) =>
+                      updateField((p) => ({
+                        ...p,
+                        sundayRitual: {
+                          ...(p.sundayRitual || { enabled: true, title: "The Sunday Test: A Day in My World", subtitle: "", moments: [] }),
+                          enabled: e.target.checked,
+                        },
+                      }))
+                    }
+                    className="rounded border-zinc-700 text-emerald-500"
+                  />
+                  <span>Show Section</span>
+                </label>
+              </div>
+
+              <div className="max-w-2xl space-y-2">
+                <input
+                  type="text"
+                  value={profile.sundayRitual?.title || ""}
+                  placeholder="The Sunday Test: A Day in My World"
+                  onChange={(e) =>
+                    updateField((p) => ({
+                      ...p,
+                      sundayRitual: {
+                        ...(p.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }),
+                        title: e.target.value,
+                      },
+                    }))
+                  }
+                  className="w-full text-2xl font-bold text-zinc-100 bg-zinc-900/40 p-2 rounded-xl border border-dashed border-zinc-700"
+                />
+                <textarea
+                  rows={2}
+                  value={profile.sundayRitual?.subtitle || ""}
+                  placeholder="Adjectives rarely show what daily life with someone feels like..."
+                  onChange={(e) =>
+                    updateField((p) => ({
+                      ...p,
+                      sundayRitual: {
+                        ...(p.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }),
+                        subtitle: e.target.value,
+                      },
+                    }))
+                  }
+                  className="w-full text-sm text-zinc-400 bg-zinc-900/40 p-2 rounded-xl border border-dashed border-zinc-700"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(profile.sundayRitual?.moments || []).map((moment, idx) => (
+                  <div key={moment.id || idx} className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <input
+                        type="text"
+                        value={moment.time}
+                        placeholder="08:00 AM"
+                        onChange={(e) => {
+                          const moments = [...(profile.sundayRitual?.moments || [])];
+                          moments[idx] = { ...moments[idx], time: e.target.value };
+                          updateField((p) => ({
+                            ...p,
+                            sundayRitual: { ...(p.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }), moments },
+                          }));
+                        }}
+                        className="w-24 text-xs font-mono font-bold text-emerald-400 bg-zinc-950/70 px-2 py-1 rounded border border-zinc-800"
+                      />
+                      <input
+                        type="text"
+                        value={moment.atmosphere}
+                        placeholder="Atmosphere tag"
+                        onChange={(e) => {
+                          const moments = [...(profile.sundayRitual?.moments || [])];
+                          moments[idx] = { ...moments[idx], atmosphere: e.target.value };
+                          updateField((p) => ({
+                            ...p,
+                            sundayRitual: { ...(p.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }), moments },
+                          }));
+                        }}
+                        className="flex-1 text-[11px] text-amber-300 bg-zinc-950/70 px-2 py-1 rounded border border-zinc-800"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={moment.label}
+                      placeholder="Step label (e.g. Morning Run)"
+                      onChange={(e) => {
+                        const moments = [...(profile.sundayRitual?.moments || [])];
+                        moments[idx] = { ...moments[idx], label: e.target.value };
+                        updateField((p) => ({
+                          ...p,
+                          sundayRitual: { ...(p.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }), moments },
+                        }));
+                      }}
+                      className="w-full text-xs font-semibold text-zinc-300 bg-transparent border-b border-dashed border-zinc-700 pb-0.5"
+                    />
+                    <input
+                      type="text"
+                      value={moment.title}
+                      placeholder="Moment headline"
+                      onChange={(e) => {
+                        const moments = [...(profile.sundayRitual?.moments || [])];
+                        moments[idx] = { ...moments[idx], title: e.target.value };
+                        updateField((p) => ({
+                          ...p,
+                          sundayRitual: { ...(p.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }), moments },
+                        }));
+                      }}
+                      className="w-full text-sm font-bold text-zinc-100 bg-transparent border-b border-dashed border-zinc-700 pb-0.5"
+                    />
+                    <textarea
+                      rows={3}
+                      value={moment.desc}
+                      placeholder="Sensory description of this moment..."
+                      onChange={(e) => {
+                        const moments = [...(profile.sundayRitual?.moments || [])];
+                        moments[idx] = { ...moments[idx], desc: e.target.value };
+                        updateField((p) => ({
+                          ...p,
+                          sundayRitual: { ...(p.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }), moments },
+                        }));
+                      }}
+                      className="w-full text-xs text-zinc-400 bg-zinc-950/40 p-1.5 rounded-lg border border-dashed border-zinc-700"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            profile.sundayRitual?.enabled !== false &&
+            profile.sundayRitual?.moments && (
+              <SundayRitualSection
+                ownerName={profile.name}
+                title={profile.sundayRitual.title}
+                subtitle={profile.sundayRitual.subtitle}
+                moments={profile.sundayRitual.moments}
+              />
+            )
+          )}
         </section>
 
         {/* Section 2: Visual Moments & Rhythm */}
@@ -1179,6 +1366,162 @@ export default function StoryLiveEditor({
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Section 2.8: Values & Communication Mirror Editor / Preview */}
+        <section className="py-16 border-t border-zinc-900">
+          {isEditMode ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400 flex items-center gap-1.5">
+                    <Compass className="w-4 h-4" /> Values &amp; Communication Mirror
+                  </span>
+                  <p className="text-xs text-zinc-400">
+                    Interactive scenarios where visitors see how your relationship instincts harmonize.
+                  </p>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer select-none px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800">
+                  <input
+                    type="checkbox"
+                    checked={profile.valuesMirror?.enabled !== false}
+                    onChange={(e) =>
+                      updateField((p) => ({
+                        ...p,
+                        valuesMirror: {
+                          ...(p.valuesMirror || { enabled: true, title: "Values & Communication Mirror", subtitle: "", scenarios: [] }),
+                          enabled: e.target.checked,
+                        },
+                      }))
+                    }
+                    className="rounded border-zinc-700 text-emerald-500"
+                  />
+                  <span>Show Section</span>
+                </label>
+              </div>
+
+              <div className="max-w-2xl space-y-2">
+                <input
+                  type="text"
+                  value={profile.valuesMirror?.title || ""}
+                  placeholder="Values & Communication Mirror"
+                  onChange={(e) =>
+                    updateField((p) => ({
+                      ...p,
+                      valuesMirror: {
+                        ...(p.valuesMirror || { enabled: true, title: "", subtitle: "", scenarios: [] }),
+                        title: e.target.value,
+                      },
+                    }))
+                  }
+                  className="w-full text-2xl font-bold text-zinc-100 bg-zinc-900/40 p-2 rounded-xl border border-dashed border-zinc-700"
+                />
+              </div>
+
+              <div className="space-y-4">
+                {(profile.valuesMirror?.scenarios || []).map((scenario, sIdx) => (
+                  <div key={scenario.id || sIdx} className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <input
+                        type="text"
+                        value={scenario.topic}
+                        placeholder="Topic"
+                        onChange={(e) => {
+                          const scenarios = [...(profile.valuesMirror?.scenarios || [])];
+                          scenarios[sIdx] = { ...scenarios[sIdx], topic: e.target.value };
+                          updateField((p) => ({
+                            ...p,
+                            valuesMirror: { ...(p.valuesMirror || { enabled: true, title: "", subtitle: "", scenarios: [] }), scenarios },
+                          }));
+                        }}
+                        className="text-xs font-bold text-emerald-400 bg-zinc-950/70 px-3 py-1.5 rounded-lg border border-zinc-800"
+                      />
+                      <input
+                        type="text"
+                        value={scenario.question}
+                        placeholder="Scenario question"
+                        onChange={(e) => {
+                          const scenarios = [...(profile.valuesMirror?.scenarios || [])];
+                          scenarios[sIdx] = { ...scenarios[sIdx], question: e.target.value };
+                          updateField((p) => ({
+                            ...p,
+                            valuesMirror: { ...(p.valuesMirror || { enabled: true, title: "", subtitle: "", scenarios: [] }), scenarios },
+                          }));
+                        }}
+                        className="sm:col-span-2 text-xs font-semibold text-zinc-200 bg-zinc-950/70 px-3 py-1.5 rounded-lg border border-zinc-800"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {scenario.options.map((opt, oIdx) => (
+                        <div key={opt.id || oIdx} className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/80 space-y-2">
+                          <input
+                            type="text"
+                            value={opt.shortTag}
+                            placeholder="Tag"
+                            onChange={(e) => {
+                              const scenarios = [...(profile.valuesMirror?.scenarios || [])];
+                              const options = [...scenarios[sIdx].options];
+                              options[oIdx] = { ...options[oIdx], shortTag: e.target.value };
+                              scenarios[sIdx] = { ...scenarios[sIdx], options };
+                              updateField((p) => ({
+                                ...p,
+                                valuesMirror: { ...(p.valuesMirror || { enabled: true, title: "", subtitle: "", scenarios: [] }), scenarios },
+                              }));
+                            }}
+                            className="w-full text-[11px] font-bold text-emerald-300 bg-zinc-900 px-2 py-1 rounded border border-zinc-800"
+                          />
+                          <textarea
+                            rows={2}
+                            value={opt.label}
+                            placeholder="Option statement..."
+                            onChange={(e) => {
+                              const scenarios = [...(profile.valuesMirror?.scenarios || [])];
+                              const options = [...scenarios[sIdx].options];
+                              options[oIdx] = { ...options[oIdx], label: e.target.value };
+                              scenarios[sIdx] = { ...scenarios[sIdx], options };
+                              updateField((p) => ({
+                                ...p,
+                                valuesMirror: { ...(p.valuesMirror || { enabled: true, title: "", subtitle: "", scenarios: [] }), scenarios },
+                              }));
+                            }}
+                            className="w-full text-[11px] text-zinc-300 bg-transparent border-b border-dashed border-zinc-800"
+                          />
+                          <textarea
+                            rows={2}
+                            value={opt.ownerReflection}
+                            placeholder="Your response reflection..."
+                            onChange={(e) => {
+                              const scenarios = [...(profile.valuesMirror?.scenarios || [])];
+                              const options = [...scenarios[sIdx].options];
+                              options[oIdx] = { ...options[oIdx], ownerReflection: e.target.value };
+                              scenarios[sIdx] = { ...scenarios[sIdx], options };
+                              updateField((p) => ({
+                                ...p,
+                                valuesMirror: { ...(p.valuesMirror || { enabled: true, title: "", subtitle: "", scenarios: [] }), scenarios },
+                              }));
+                            }}
+                            className="w-full text-[11px] text-zinc-400 bg-zinc-900/50 p-1.5 rounded border border-dashed border-zinc-800"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            profile.valuesMirror?.enabled !== false &&
+            profile.valuesMirror?.scenarios && (
+              <ValuesMirrorSection
+                ownerName={profile.name}
+                title={profile.valuesMirror.title}
+                subtitle={profile.valuesMirror.subtitle}
+                scenarios={profile.valuesMirror.scenarios}
+              />
+            )
+          )}
         </section>
 
         {/* Section 3: Partner Vision */}

@@ -34,6 +34,7 @@ import {
 import Image from "next/image";
 import { ProfileConfig, DEFAULT_PROFILE, getGenericStarterProfile } from "@/lib/profile";
 import StoryLiveEditor from "@/components/StoryLiveEditor";
+import VipInvitesTab from "@/components/VipInvitesTab";
 
 interface SectionDwell {
   sectionId: string;
@@ -77,7 +78,7 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Active view tab: visual editor by default!
-  const [activeTab, setActiveTab] = useState<"editor" | "export" | "analytics" | "llm" | "inbox" | "settings">("editor");
+  const [activeTab, setActiveTab] = useState<"editor" | "invites" | "export" | "analytics" | "llm" | "inbox" | "settings">("editor");
 
   const [analytics, setAnalytics] = useState<RealmAnalyticsData | null>(null);
   const [profile, setProfile] = useState<ProfileConfig>(() =>
@@ -128,7 +129,7 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
     try {
       const [statsRes, profileRes, smtpRes] = await Promise.all([
         fetch(`/api/realms/${slug}/stats?key=${encodeURIComponent(authToken)}`),
-        fetch(`/api/realms/${slug}/profile`),
+        fetch(`/api/realms/${slug}/profile?key=${encodeURIComponent(authToken)}`),
         fetch(`/api/realms/${slug}/smtp?key=${encodeURIComponent(authToken)}`),
       ]);
 
@@ -464,6 +465,17 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
           </button>
 
           <button
+            onClick={() => setActiveTab("invites")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "invites"
+                ? "bg-emerald-500 text-zinc-950 font-bold shadow"
+                : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Key className="w-3.5 h-3.5" /> VIP Realm Keys
+          </button>
+
+          <button
             onClick={() => setActiveTab("export")}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === "export"
@@ -532,6 +544,15 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
         />
       )}
 
+      {/* 1.5. Ephemeral VIP Invites */}
+      {activeTab === "invites" && (
+        <VipInvitesTab
+          slug={slug}
+          token={token}
+          ownerName={profile.name}
+        />
+      )}
+
       {/* 2. Shareable Decks & PDF Export */}
       {activeTab === "export" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-in fade-in duration-300">
@@ -552,14 +573,14 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
             {/* Quick Preview Links */}
             <div className="flex flex-wrap gap-2 shrink-0">
               <Link
-                href={`/${slug}/cards?mode=${exportMode}`}
+                href={`/${slug}/cards?mode=${exportMode}${exportMode === "revealed" ? `&token=${encodeURIComponent(token)}` : ""}`}
                 target="_blank"
                 className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700 transition flex items-center gap-1.5"
               >
                 <Layers className="w-3.5 h-3.5 text-emerald-400" /> Preview Cards <ExternalLink className="w-3 h-3 text-zinc-500" />
               </Link>
               <Link
-                href={`/${slug}/biodata?mode=${exportMode}`}
+                href={`/${slug}/biodata?mode=${exportMode}${exportMode === "revealed" ? `&token=${encodeURIComponent(token)}` : ""}`}
                 target="_blank"
                 className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700 transition flex items-center gap-1.5"
               >

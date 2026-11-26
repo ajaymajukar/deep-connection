@@ -201,6 +201,26 @@ IMPORTANT: Output ONLY the valid JSON object, without conversational filler.`.tr
         ...currentProfile.rhythm,
         ...(parsedData.rhythm || {}),
       },
+      sundayRitual: parsedData.sundayRitual
+        ? {
+            ...(currentProfile.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }),
+            ...parsedData.sundayRitual,
+            moments:
+              Array.isArray(parsedData.sundayRitual.moments) && parsedData.sundayRitual.moments.length > 0
+                ? parsedData.sundayRitual.moments
+                : currentProfile.sundayRitual?.moments || [],
+          }
+        : currentProfile.sundayRitual,
+      valuesMirror: parsedData.valuesMirror
+        ? {
+            ...(currentProfile.valuesMirror || { enabled: true, title: "", subtitle: "", scenarios: [] }),
+            ...parsedData.valuesMirror,
+            scenarios:
+              Array.isArray(parsedData.valuesMirror.scenarios) && parsedData.valuesMirror.scenarios.length > 0
+                ? parsedData.valuesMirror.scenarios
+                : currentProfile.valuesMirror?.scenarios || [],
+          }
+        : currentProfile.valuesMirror,
       partnerVision: {
         ...currentProfile.partnerVision,
         ...(parsedData.partnerVision || {}),

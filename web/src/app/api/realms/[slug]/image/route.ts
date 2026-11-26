@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRealmProfile, getRealmMeta } from "@/lib/realms";
+import { getRealmProfile, getRealmMeta, resolveRealmAccess, sanitizeSlug } from "@/lib/realms";
 import sharp from "sharp";
 import fs from "fs/promises";
 import path from "path";
-import redis from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +17,7 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
+    const cleanSlug = sanitizeSlug(slug);
     const { searchParams } = new URL(req.url);
 
     const imageKey = searchParams.get("key") || "hero"; // "hero" | "friendsTrip" | "casualOutdoor" | "formalWaistcoat" | "craftDesk"
@@ -25,17 +25,13 @@ export async function GET(
     const cardId = searchParams.get("cardId");
     const cardIndex = searchParams.get("cardIndex");
     const requestedMode = searchParams.get("mode") === "revealed" ? "revealed" : "unrevealed";
-    const token =
-      req.headers.get("authorization")?.replace("Bearer ", "") ||
-      searchParams.get("token") ||
-      req.cookies.get(`unlocked_token_${slug}`)?.value;
 
-    const meta = await getRealmMeta(slug);
+    const meta = await getRealmMeta(cleanSlug);
     if (!meta) {
       return NextResponse.json({ error: "Realm not found" }, { status: 404 });
     }
 
-    const profile = await getRealmProfile(slug);
+    const profile = await getRealmProfile(cleanSlug);
     let rawImageSource: string | undefined;
 
     if (section === "rhythm") {
@@ -83,25 +79,14 @@ export async function GET(
     }
 
     // 2. Authorization check if revealed mode is requested
-    let isAuthorized = false;
-    if (token) {
-      const expectedAdminToken = `auth_${meta.slug}_${Buffer.from(meta.password).toString("base64")}`;
-      const legacyKey = process.env.ADMIN_SECRET || "admin2026";
-
-      // Admin access check
-      if (token === expectedAdminToken || token === meta.password || token === legacyKey) {
-        isAuthorized = true;
-      } else {
-        // Mutual-reveal visitor unlock check via Redis
-        const unlockRecord = await redis.get(`realm:${slug}:unlocked:${token}`);
-        if (unlockRecord) {
-          isAuthorized = true;
-        }
-      }
-    }
+    const access = await resolveRealmAccess(cleanSlug, {
+      token: req.headers.get("authorization")?.replace("Bearer ", "") || searchParams.get("token"),
+      unlockToken: req.cookies.get(`unlocked_token_${cleanSlug}`)?.value,
+      inviteToken: searchParams.get("invite") || req.cookies.get(`invite_token_${cleanSlug}`)?.value,
+    });
 
     // If revealed is requested without authorization, force unrevealed
-    const effectiveMode = isAuthorized && requestedMode === "revealed" ? "revealed" : "unrevealed";
+    const effectiveMode = access.canViewPhotos && requestedMode === "revealed" ? "revealed" : "unrevealed";
 
     // 3. PHYSICAL SERVER-SIDE DESTRUCTIVE TRANSFORMATION
     if (effectiveMode === "unrevealed") {

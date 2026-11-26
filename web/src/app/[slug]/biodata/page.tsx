@@ -1,5 +1,6 @@
-import { getRealmProfile } from "@/lib/realms";
+import { getRealmProfile, resolveRealmAccess, sanitizeSlug } from "@/lib/realms";
 import { DEFAULT_PROFILE, ProfileConfig } from "@/lib/profile";
+import { cookies } from "next/headers";
 import {
   MapPin,
   Ruler,
@@ -19,15 +20,22 @@ export default async function RealmBiodataPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ mode?: string }>;
+  searchParams: Promise<{ mode?: string; token?: string; invite?: string }>;
 }) {
   const { slug } = await params;
-  const { mode = "unrevealed" } = await searchParams;
-  const isRevealed = mode === "revealed";
+  const cleanSlug = sanitizeSlug(slug);
+  const { mode = "unrevealed", token, invite } = await searchParams;
+  const cookieStore = await cookies();
+  const access = await resolveRealmAccess(cleanSlug, {
+    token: token || null,
+    unlockToken: cookieStore.get(`unlocked_token_${cleanSlug}`)?.value || null,
+    inviteToken: invite || cookieStore.get(`invite_token_${cleanSlug}`)?.value || null,
+  });
+  const isRevealed = mode === "revealed" && access.canViewPhotos;
 
   let profile: ProfileConfig = DEFAULT_PROFILE;
   try {
-    profile = await getRealmProfile(slug);
+    profile = await getRealmProfile(cleanSlug);
   } catch (e) {
     console.warn("Failed to load profile for biodata, using default:", e);
   }
@@ -35,15 +43,15 @@ export default async function RealmBiodataPage({
   // Enforce server-side physical blur: when unrevealed, use the server-blurred raster
   const heroImage = isRevealed
     ? profile.images.hero
-    : `/api/realms/${slug}/image?key=hero&mode=unrevealed`;
+    : `/api/realms/${cleanSlug}/image?key=hero&mode=unrevealed`;
 
   const friendsTripImage = isRevealed
     ? profile.images.friendsTrip
-    : `/api/realms/${slug}/image?key=friendsTrip&mode=unrevealed`;
+    : `/api/realms/${cleanSlug}/image?key=friendsTrip&mode=unrevealed`;
 
   const secondaryLifestyleImage = isRevealed
-    ? profile.images.formalWaistcoat || profile.images.casualOutdoor
-    : `/api/realms/${slug}/image?key=formalWaistcoat&mode=unrevealed`;
+    ? profile.images.casualOutdoor || profile.images.formalWaistcoat
+    : `/api/realms/${cleanSlug}/image?key=casualOutdoor&mode=unrevealed`;
 
   return (
     <div className="bg-zinc-950 text-zinc-100 min-h-screen py-10 px-4 print:p-0 print:bg-zinc-950 flex flex-col items-center">

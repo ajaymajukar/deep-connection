@@ -4,12 +4,13 @@ import {
   getRealmPrivateAlbum,
   saveRealmMessage,
   getRealmSmtp,
+  issueVisitorUnlockToken,
+  isValidAdminToken,
+  sanitizeSlug,
   DEFAULT_REALM_SLUG,
 } from "@/lib/realms";
 import { sendAlertToAjay, sendCustomRealmAlert } from "@/lib/mailer";
 import sharp from "sharp";
-import redis from "@/lib/redis";
-import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,7 @@ export async function GET(
     const authHeader = req.headers.get("authorization");
     const keyParam = req.nextUrl.searchParams.get("key");
     const token = authHeader?.replace("Bearer ", "") || keyParam;
-    const expectedToken = `auth_${meta.slug}_${Buffer.from(meta.password).toString("base64")}`;
-    const legacyKey = process.env.ADMIN_SECRET || "admin2026";
-    const isAdmin = token && (token === expectedToken || token === meta.password || token === legacyKey);
+    const isAdmin = isValidAdminToken(meta, token);
 
     if (isAdmin && album) {
       return NextResponse.json({
@@ -186,20 +185,10 @@ export async function POST(
     }
 
     // 3. Issue cryptographically secure unlock token in Redis (30-day validity)
-    const unlockToken = crypto.randomUUID();
-    try {
-      await redis.set(
-        `realm:${slug}:unlocked:${unlockToken}`,
-        {
-          email: email.trim().toLowerCase(),
-          name: name.trim(),
-          timestamp: Date.now(),
-        },
-        { ex: 86400 * 30 }
-      );
-    } catch (redisErr) {
-      console.warn("Could not persist unlock token in Redis:", redisErr);
-    }
+    const unlockToken = await issueVisitorUnlockToken(slug, {
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+    });
 
     // 4. Return unlocked private album and token to the visitor
     const album = await getRealmPrivateAlbum(slug);
@@ -215,7 +204,7 @@ export async function POST(
     });
 
     // Set secure cookie so subsequent profile & image requests receive revealed photos
-    response.cookies.set(`unlocked_token_${slug}`, unlockToken, {
+    response.cookies.set(`unlocked_token_${sanitizeSlug(slug)}`, unlockToken, {
       path: "/",
       maxAge: 86400 * 30,
       sameSite: "lax",

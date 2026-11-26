@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRealmProfile, saveRealmProfile, getRealmMeta } from "@/lib/realms";
+import {
+  getRealmProfile,
+  saveRealmProfile,
+  getRealmMeta,
+  getRealmVoiceNote,
+  resolveRealmAccess,
+  isValidAdminToken,
+  sanitizeSlug,
+} from "@/lib/realms";
 import { ProfileConfig } from "@/lib/profile";
-import redis from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 
@@ -11,42 +18,56 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const profile = await getRealmProfile(slug);
-    const meta = await getRealmMeta(slug);
+    const cleanSlug = sanitizeSlug(slug);
+    const [profile, voiceRecord, access] = await Promise.all([
+      getRealmProfile(cleanSlug),
+      getRealmVoiceNote(cleanSlug),
+      resolveRealmAccess(cleanSlug, {
+        token:
+          req.headers.get("authorization")?.replace("Bearer ", "") ||
+          req.nextUrl.searchParams.get("key") ||
+          req.nextUrl.searchParams.get("token"),
+        unlockToken:
+          req.nextUrl.searchParams.get("unlockToken") ||
+          req.cookies.get(`unlocked_token_${cleanSlug}`)?.value,
+        inviteToken:
+          req.nextUrl.searchParams.get("invite") ||
+          req.cookies.get(`invite_token_${cleanSlug}`)?.value,
+      }),
+    ]);
 
-    const token =
-      req.headers.get("authorization")?.replace("Bearer ", "") ||
-      req.nextUrl.searchParams.get("key") ||
-      req.nextUrl.searchParams.get("unlockToken") ||
-      req.cookies.get(`unlocked_token_${slug}`)?.value;
+    const enrichedVoiceNote = profile.voiceNote
+      ? { ...profile.voiceNote, hasAudio: Boolean(voiceRecord), durationSec: voiceRecord?.durationSec ?? profile.voiceNote.durationSec }
+      : voiceRecord
+      ? { enabled: true, title: `A Quick Voice Intro from ${profile.name}`, hasAudio: true, durationSec: voiceRecord.durationSec }
+      : undefined;
 
-    let isAuthorized = false;
-    if (meta && token) {
-      const expectedAdminToken = `auth_${meta.slug}_${Buffer.from(meta.password).toString("base64")}`;
-      const legacyKey = process.env.ADMIN_SECRET || "admin2026";
-
-      if (token === expectedAdminToken || token === meta.password || token === legacyKey) {
-        isAuthorized = true;
-      } else {
-        const unlockRecord = await redis.get(`realm:${slug}:unlocked:${token}`);
-        if (unlockRecord) {
-          isAuthorized = true;
+    // Mask social URLs server-side whenever social links should stay hidden
+    const sanitizeSocials = (socials?: ProfileConfig["socials"]) => {
+      if (!socials || access.canViewSocials) return socials;
+      const masked: Record<string, string> = {};
+      for (const [k, v] of Object.entries(socials)) {
+        if (typeof v === "string" && v.trim().length > 0) {
+          masked[k] = "__protected__";
         }
       }
-    }
+      return masked as ProfileConfig["socials"];
+    };
 
     // Physical server-side sanitization: NEVER leak raw unblurred photo data or paths to unauthorized visitors
-    if (!isAuthorized) {
+    if (!access.canViewPhotos) {
       const sanitizedProfile: ProfileConfig = {
         ...profile,
+        voiceNote: enrichedVoiceNote,
+        socials: sanitizeSocials(profile.socials),
         images: {
           ...profile.images,
-          hero: `/api/realms/${slug}/image?key=hero&mode=unrevealed`,
-          friendsTrip: `/api/realms/${slug}/image?key=friendsTrip&mode=unrevealed`,
-          casualOutdoor: `/api/realms/${slug}/image?key=casualOutdoor&mode=unrevealed`,
-          formalWaistcoat: `/api/realms/${slug}/image?key=formalWaistcoat&mode=unrevealed`,
+          hero: `/api/realms/${cleanSlug}/image?key=hero&mode=unrevealed`,
+          friendsTrip: `/api/realms/${cleanSlug}/image?key=friendsTrip&mode=unrevealed`,
+          casualOutdoor: `/api/realms/${cleanSlug}/image?key=casualOutdoor&mode=unrevealed`,
+          formalWaistcoat: `/api/realms/${cleanSlug}/image?key=formalWaistcoat&mode=unrevealed`,
           craftDesk: profile.images.craftDesk
-            ? `/api/realms/${slug}/image?key=craftDesk&mode=unrevealed`
+            ? `/api/realms/${cleanSlug}/image?key=craftDesk&mode=unrevealed`
             : `/images/hacker-desk.jpg`,
         },
         craft: {
@@ -54,7 +75,7 @@ export async function GET(
           cards: (profile.craft?.cards || []).map((card, idx) => ({
             ...card,
             image: card.image
-              ? `/api/realms/${slug}/image?section=craft&cardId=${encodeURIComponent(card.id || String(idx))}&mode=unrevealed`
+              ? `/api/realms/${cleanSlug}/image?section=craft&cardId=${encodeURIComponent(card.id || String(idx))}&mode=unrevealed`
               : undefined,
           })),
         },
@@ -62,7 +83,7 @@ export async function GET(
           ...profile.rhythm,
           extraCards: (profile.rhythm?.extraCards || []).map((card, idx) => ({
             ...card,
-            image: `/api/realms/${slug}/image?section=rhythm&cardId=${encodeURIComponent(card.id || String(idx))}&mode=unrevealed`,
+            image: `/api/realms/${cleanSlug}/image?section=rhythm&cardId=${encodeURIComponent(card.id || String(idx))}&mode=unrevealed`,
           })),
         },
       };
@@ -75,13 +96,20 @@ export async function GET(
       });
     }
 
-    // Authorized access (Admin or visitor with verified reciprocal unlock token)
-    return NextResponse.json(profile, {
-      headers: {
-        "Cache-Control": "no-store, max-age=0",
-        "X-Privacy-Protection": "Authorized",
+    // Authorized access (Admin, mutual-reveal visitor, or authorized VIP invite)
+    return NextResponse.json(
+      {
+        ...profile,
+        voiceNote: enrichedVoiceNote,
+        socials: sanitizeSocials(profile.socials),
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+          "X-Privacy-Protection": "Authorized",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error fetching realm profile:", error);
     return NextResponse.json({ error: "Failed to fetch realm profile" }, { status: 500 });
@@ -94,17 +122,17 @@ export async function POST(
 ) {
   try {
     const { slug } = await params;
-    const meta = await getRealmMeta(slug);
+    const cleanSlug = sanitizeSlug(slug);
+    const meta = await getRealmMeta(cleanSlug);
     if (!meta) {
       return NextResponse.json({ error: "Realm not found" }, { status: 404 });
     }
 
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "") || req.nextUrl.searchParams.get("key");
-    const expectedToken = `auth_${meta.slug}_${Buffer.from(meta.password).toString("base64")}`;
-    const legacyKey = process.env.ADMIN_SECRET || "admin2026";
+    const token =
+      req.headers.get("authorization")?.replace("Bearer ", "") ||
+      req.nextUrl.searchParams.get("key");
 
-    if (token !== expectedToken && token !== meta.password && token !== legacyKey) {
+    if (!isValidAdminToken(meta, token)) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
     }
 
@@ -113,7 +141,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid profile payload" }, { status: 400 });
     }
 
-    const success = await saveRealmProfile(slug, body);
+    const success = await saveRealmProfile(cleanSlug, body);
     if (!success) {
       return NextResponse.json({ error: "Failed to persist realm profile" }, { status: 500 });
     }

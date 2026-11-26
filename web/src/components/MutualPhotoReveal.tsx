@@ -33,6 +33,7 @@ interface MutualPhotoRevealProps {
   photoCount?: number;
   categories?: string[];
   turnstileToken?: string | null;
+  referrer?: string | null;
 }
 
 export default function MutualPhotoReveal({
@@ -43,6 +44,7 @@ export default function MutualPhotoReveal({
   photoCount = 4,
   categories = ["Coastal Days", "Travel & Nature", "Everyday Rituals", "Quiet Downtime"],
   turnstileToken,
+  referrer,
 }: MutualPhotoRevealProps) {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [unlockedPhotos, setUnlockedPhotos] = useState<PrivateAlbumItem[]>([]);
@@ -176,7 +178,7 @@ export default function MutualPhotoReveal({
           contact: contact.trim() || undefined,
           message: message.trim() || undefined,
           photo: photoDataUrl,
-          ref: "Mutual Photo Reveal Section",
+          ref: referrer || "Mutual Photo Reveal Section",
           turnstileToken: turnstileToken || undefined,
         }),
       });

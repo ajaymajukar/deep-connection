@@ -1,5 +1,39 @@
 import redis from "./redis";
 
+export interface SundayMoment {
+  id: string;
+  time: string;
+  label: string;
+  title: string;
+  desc: string;
+  atmosphere: string;
+}
+
+export interface ValuesMirrorOption {
+  id: string;
+  label: string;
+  shortTag: string;
+  ownerReflection: string;
+  harmonyLevel: "aligned" | "complementary" | "distinct";
+}
+
+export interface ValuesMirrorScenario {
+  id: string;
+  topic: string;
+  question: string;
+  options: ValuesMirrorOption[];
+}
+
+export interface VoiceNoteMeta {
+  enabled: boolean;
+  title: string;
+  subtitle?: string;
+  durationSec?: number;
+  transcript?: string;
+  requireUnlock?: boolean;
+  hasAudio?: boolean;
+}
+
 export interface ProfileConfig {
   name: string;
   tagline: string;
@@ -48,6 +82,19 @@ export interface ProfileConfig {
       image: string;
     }>;
   };
+  sundayRitual?: {
+    enabled: boolean;
+    title: string;
+    subtitle: string;
+    moments: SundayMoment[];
+  };
+  valuesMirror?: {
+    enabled: boolean;
+    title: string;
+    subtitle: string;
+    scenarios: ValuesMirrorScenario[];
+  };
+  voiceNote?: VoiceNoteMeta;
   partnerVision: {
     title: string;
     subtitle: string;
@@ -134,6 +181,135 @@ export function getGenericStarterProfile(displayName: string): ProfileConfig {
       highlightTitle: "Weekend Trips & Quiet Discoveries",
       highlightDesc: "I enjoy getting outside, discovering cozy coffee spots, reading, and spending quality downtime with good people.",
     },
+    sundayRitual: {
+      enabled: true,
+      title: "The Sunday Test: A Day in My World",
+      subtitle: "Adjectives rarely show what daily life with someone feels like. Here is how an unhurried Sunday actually unfolds.",
+      moments: [
+        {
+          id: "morning",
+          time: "08:00 AM",
+          label: "Morning Reset",
+          title: "Quiet Movement & Fresh Brew",
+          desc: "Starting early with a workout or walk, followed by freshly brewed coffee while the day is still calm and unhurried.",
+          atmosphere: "Discipline & Fresh Air",
+        },
+        {
+          id: "afternoon",
+          time: "01:00 PM",
+          label: "Slow Cooking",
+          title: "Thoughtful Lunch & Offline Hours",
+          desc: "Cooking a unhurried meal from scratch, putting phones aside, and enjoying honest conversation around the table.",
+          atmosphere: "Warmth & Presence",
+        },
+        {
+          id: "evening",
+          time: "05:30 PM",
+          label: "Outdoors & Unwind",
+          title: "Scenic Drive or Quiet Recharge",
+          desc: "Exploring a scenic overlook or park, followed by music, reading, and preparing calmly for the week ahead.",
+          atmosphere: "Peace & Perspective",
+        },
+      ],
+    },
+    valuesMirror: {
+      enabled: true,
+      title: "Values & Communication Mirror",
+      subtitle: "No matchmaking scores or gimmicks—explore how our instincts align across three everyday relationship scenarios.",
+      scenarios: [
+        {
+          id: "conflict",
+          topic: "Navigating Disagreements",
+          question: "When tension builds up over something small or serious, how do you naturally resolve it?",
+          options: [
+            {
+              id: "direct_calm",
+              label: "Pause briefly if heated, then talk it out calmly and directly as a team.",
+              shortTag: "Direct & Calm",
+              ownerReflection: "We speak the exact same language. I believe in tackling problems side-by-side without silent treatments or scorekeeping.",
+              harmonyLevel: "aligned",
+            },
+            {
+              id: "space_first",
+              label: "Take a little quiet space to gather thoughts before talking openly.",
+              shortTag: "Reflective Space",
+              ownerReflection: "That resonates strongly. Having a mindful pause before a thoughtful, honest talk avoids saying things out of frustration.",
+              harmonyLevel: "aligned",
+            },
+            {
+              id: "light_humor",
+              label: "Use warmth and gentle humor to break the ice, then address the real issue.",
+              shortTag: "Warmth First",
+              ownerReflection: "Keeping perspective is a great strength. Warmth paired with genuine accountability keeps a relationship light yet honest.",
+              harmonyLevel: "complementary",
+            },
+          ],
+        },
+        {
+          id: "weekend_pace",
+          topic: "Weekend Rhythm",
+          question: "After a busy work week, what genuinely recharges your battery?",
+          options: [
+            {
+              id: "slow_outdoors",
+              label: "Slow mornings, cooking something fresh, and a peaceful outdoor drive or trail.",
+              shortTag: "Unhurried & Outdoors",
+              ownerReflection: "You've basically described my ideal Sunday. Slow mornings and fresh air keep me completely grounded.",
+              harmonyLevel: "aligned",
+            },
+            {
+              id: "balanced_mix",
+              label: "One day out discovering new places or cafes, and one quiet day completely at home.",
+              shortTag: "Balanced Mix",
+              ownerReflection: "A healthy rhythm. Exploring together on Saturday and keeping Sunday calm gives us the best of both worlds.",
+              harmonyLevel: "aligned",
+            },
+            {
+              id: "social_energy",
+              label: "Hosting close friends or family for dinner and lively conversation.",
+              shortTag: "Hosting & Gatherings",
+              ownerReflection: "I love small, intentional gatherings with people we genuinely care about—especially over good food.",
+              harmonyLevel: "complementary",
+            },
+          ],
+        },
+        {
+          id: "partnership_balance",
+          topic: "Ambition & Sanctuary",
+          question: "How do you picture career ambition fitting alongside building a shared home?",
+          options: [
+            {
+              id: "equal_teammates",
+              label: "Two independent equals cheering on each other's craft while sharing home responsibilities.",
+              shortTag: "Equal Partnership",
+              ownerReflection: "Completely aligned. I'm building an egalitarian partnership where both careers, hobbies, and voices carry equal weight.",
+              harmonyLevel: "aligned",
+            },
+            {
+              id: "peace_first",
+              label: "Ambition matters deeply, as long as work never crowds out kindness and home peace.",
+              shortTag: "Driven yet Grounded",
+              ownerReflection: "Exactly my philosophy. Hard work fuels our goals, while mutual peace at home is what makes it all worthwhile.",
+              harmonyLevel: "aligned",
+            },
+            {
+              id: "growth_seasons",
+              label: "Leaning in to support whichever partner is navigating an intense career season.",
+              shortTag: "Flexible Support",
+              ownerReflection: "True teamwork isn't always 50/50 every single day—sometimes it's covering 80% when the other person needs backing.",
+              harmonyLevel: "complementary",
+            },
+          ],
+        },
+      ],
+    },
+    voiceNote: {
+      enabled: true,
+      title: `A Quick Voice Intro from ${name}`,
+      subtitle: "Text rarely captures tone or warmth—here is 30 seconds in my own voice.",
+      requireUnlock: false,
+      hasAudio: false,
+    },
     partnerVision: {
       title: "Qualities I Value in a Partner",
       subtitle: "The values and foundations I believe create a thriving, loving partnership:",
@@ -169,6 +345,46 @@ export function getGenericStarterProfile(displayName: string): ProfileConfig {
 }
 
 /**
+ * Deep-merge a stored ProfileConfig with a fallback template without dropping nested defaults.
+ */
+export function mergeProfileWithDefaults(base: ProfileConfig, stored: Partial<ProfileConfig>): ProfileConfig {
+  return {
+    ...base,
+    ...stored,
+    images: { ...base.images, ...(stored.images || {}) },
+    specs: { ...base.specs, ...(stored.specs || {}) },
+    craft: { ...base.craft, ...(stored.craft || {}) },
+    rhythm: { ...base.rhythm, ...(stored.rhythm || {}) },
+    sundayRitual: stored.sundayRitual
+      ? {
+          ...(base.sundayRitual || { enabled: true, title: "", subtitle: "", moments: [] }),
+          ...stored.sundayRitual,
+          moments:
+            Array.isArray(stored.sundayRitual.moments) && stored.sundayRitual.moments.length > 0
+              ? stored.sundayRitual.moments
+              : base.sundayRitual?.moments || [],
+        }
+      : base.sundayRitual,
+    valuesMirror: stored.valuesMirror
+      ? {
+          ...(base.valuesMirror || { enabled: true, title: "", subtitle: "", scenarios: [] }),
+          ...stored.valuesMirror,
+          scenarios:
+            Array.isArray(stored.valuesMirror.scenarios) && stored.valuesMirror.scenarios.length > 0
+              ? stored.valuesMirror.scenarios
+              : base.valuesMirror?.scenarios || [],
+        }
+      : base.valuesMirror,
+    voiceNote: stored.voiceNote
+      ? { ...(base.voiceNote || { enabled: true, title: "" }), ...stored.voiceNote }
+      : base.voiceNote,
+    partnerVision: { ...base.partnerVision, ...(stored.partnerVision || {}) },
+    contact: { ...base.contact, ...(stored.contact || {}) },
+    socials: stored.socials !== undefined ? stored.socials : base.socials ? { ...base.socials } : undefined,
+  };
+}
+
+/**
  * Load the current profile configuration from Redis or fallback to default
  */
 export async function getActiveProfile(): Promise<ProfileConfig> {
@@ -176,17 +392,7 @@ export async function getActiveProfile(): Promise<ProfileConfig> {
     if (process.env.UPSTASH_REDIS_REST_URL) {
       const stored = await redis.get<ProfileConfig>("profile:config");
       if (stored && typeof stored === "object" && stored.name) {
-        return {
-          ...AJAY_DEFAULT_PROFILE,
-          ...stored,
-          images: { ...AJAY_DEFAULT_PROFILE.images, ...(stored.images || {}) },
-          specs: { ...AJAY_DEFAULT_PROFILE.specs, ...(stored.specs || {}) },
-          craft: { ...AJAY_DEFAULT_PROFILE.craft, ...(stored.craft || {}) },
-          rhythm: { ...AJAY_DEFAULT_PROFILE.rhythm, ...(stored.rhythm || {}) },
-          partnerVision: { ...AJAY_DEFAULT_PROFILE.partnerVision, ...(stored.partnerVision || {}) },
-          contact: { ...AJAY_DEFAULT_PROFILE.contact, ...(stored.contact || {}) },
-          socials: { ...AJAY_DEFAULT_PROFILE.socials, ...(stored.socials || {}) },
-        };
+        return mergeProfileWithDefaults(AJAY_DEFAULT_PROFILE, stored);
       }
     }
   } catch (error) {

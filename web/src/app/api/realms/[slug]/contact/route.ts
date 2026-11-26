@@ -4,7 +4,10 @@ import {
   getRealmMeta,
   getRealmSmtp,
   getRealmPrivateAlbum,
+  issueVisitorUnlockToken,
+  sanitizeSlug,
   DEFAULT_REALM_SLUG,
+  PrivateAlbumItem,
 } from "@/lib/realms";
 import {
   sendAlertToAjay,
@@ -72,7 +75,7 @@ export async function POST(
           .jpeg({ quality: 80, progressive: true })
           .toBuffer();
         optimizedPhotos.push(`data:image/jpeg;base64,${compressed.toString("base64")}`);
-      } catch (e) {
+      } catch {
         if (raw.length < 500000) {
           optimizedPhotos.push(raw);
         }
@@ -124,22 +127,38 @@ export async function POST(
       }
     }
 
-    // 3. If visitor attached a photo, unlock the private album for them
-    let albumToReturn: any[] = [];
+    // 3. If visitor attached a photo, issue unlock token & reveal private album
+    let albumToReturn: PrivateAlbumItem[] = [];
+    let unlockToken: string | undefined;
     if (hasPhotos) {
+      unlockToken = await issueVisitorUnlockToken(slug, {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+      });
       const album = await getRealmPrivateAlbum(slug);
       if (album && album.enabled && Array.isArray(album.photos)) {
         albumToReturn = album.photos;
       }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: `Your note has reached ${realm.name} directly.`,
       id: saved.id,
       unlocked: hasPhotos,
+      unlockToken,
       album: hasPhotos ? albumToReturn : undefined,
     });
+
+    if (unlockToken) {
+      response.cookies.set(`unlocked_token_${sanitizeSlug(slug)}`, unlockToken, {
+        path: "/",
+        maxAge: 86400 * 30,
+        sameSite: "lax",
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error("Error in realm contact submission:", error);
     return NextResponse.json({ success: false, error: "Failed to send message." }, { status: 500 });

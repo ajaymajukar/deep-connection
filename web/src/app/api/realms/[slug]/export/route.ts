@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBrowser } from "@/lib/browser";
-import { getRealmMeta } from "@/lib/realms";
+import { getRealmMeta, isValidAdminToken, sanitizeSlug } from "@/lib/realms";
 import JSZip from "jszip";
 
 export const dynamic = "force-dynamic";
@@ -14,23 +14,20 @@ export async function GET(
 
   try {
     const { slug } = await params;
+    const cleanSlug = sanitizeSlug(slug);
     const { searchParams } = new URL(req.url);
 
     const format = searchParams.get("format") || "deck"; // "deck" | "infographic" | "pdf"
     const mode = searchParams.get("mode") === "revealed" ? "revealed" : "unrevealed";
     const token = req.headers.get("authorization")?.replace("Bearer ", "") || searchParams.get("token");
 
-    // Authenticate admin request
-    const meta = await getRealmMeta(slug);
+    // Authenticate admin request strictly
+    const meta = await getRealmMeta(cleanSlug);
     if (!meta) {
       return NextResponse.json({ error: "Realm not found" }, { status: 404 });
     }
 
-    const expectedToken = `auth_${meta.slug}_${Buffer.from(meta.password).toString("base64")}`;
-    const legacyKey = process.env.ADMIN_SECRET || "admin2026";
-
-    // Validate access
-    if (token && token !== expectedToken && token !== meta.password && token !== legacyKey) {
+    if (!isValidAdminToken(meta, token)) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
     }
 
@@ -48,7 +45,7 @@ export async function GET(
         deviceScaleFactor: 2,
       });
 
-      const targetUrl = `${origin}/${slug}/cards?mode=${mode}`;
+      const targetUrl = `${origin}/${cleanSlug}/cards?mode=${mode}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
       await page.goto(targetUrl, {
         waitUntil: "networkidle0",
         timeout: 45000,
@@ -102,7 +99,7 @@ export async function GET(
         deviceScaleFactor: 2,
       });
 
-      const targetUrl = `${origin}/${slug}/story?export=true&mode=${mode}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
+      const targetUrl = `${origin}/${cleanSlug}/story?export=true&mode=${mode}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
       await page.goto(targetUrl, {
         waitUntil: "networkidle0",
         timeout: 45000,
@@ -119,7 +116,7 @@ export async function GET(
         status: 200,
         headers: {
           "Content-Type": "image/png",
-          "Content-Disposition": `attachment; filename="${slug}-infographic-${mode}.png"`,
+          "Content-Disposition": `attachment; filename="${cleanSlug}-infographic-${mode}.png"`,
           "Cache-Control": "no-store, max-age=0",
         },
       });
@@ -133,7 +130,7 @@ export async function GET(
         deviceScaleFactor: 2,
       });
 
-      const targetUrl = `${origin}/${slug}/biodata?mode=${mode}`;
+      const targetUrl = `${origin}/${cleanSlug}/biodata?mode=${mode}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
       await page.goto(targetUrl, {
         waitUntil: "networkidle0",
         timeout: 45000,

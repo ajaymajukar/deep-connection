@@ -1,6 +1,12 @@
 import redis from "./redis";
-import { DEFAULT_PROFILE, ProfileConfig, getGenericStarterProfile } from "./profile";
+import {
+  DEFAULT_PROFILE,
+  ProfileConfig,
+  getGenericStarterProfile,
+  mergeProfileWithDefaults,
+} from "./profile";
 import { parseReferrer } from "./referrer-parser";
+import crypto from "crypto";
 
 export interface RealmMeta {
   slug: string;
@@ -51,6 +57,38 @@ export interface RealmSectionDwellReport {
   totalSeconds: number;
   totalViews: number;
   avgSeconds: number;
+}
+
+export interface VoiceNoteRecord {
+  dataUrl: string;
+  mimeType: string;
+  durationSec?: number;
+  updatedAt: string;
+}
+
+export interface VipInvite {
+  id: string;
+  token: string;
+  guestName: string;
+  source: string;
+  personalNote?: string;
+  bypassTurnstile: boolean;
+  unlockPhotos: boolean;
+  unlockSocials: boolean;
+  createdAt: string;
+  expiresAt?: string;
+  lastOpenedAt?: string;
+  openCount: number;
+  revoked?: boolean;
+}
+
+export interface RealmAccessResult {
+  isAdmin: boolean;
+  hasUnlockToken: boolean;
+  invite: VipInvite | null;
+  canViewPhotos: boolean;
+  canViewSocials: boolean;
+  canBypassTurnstile: boolean;
 }
 
 export const DEFAULT_REALM_SLUG = process.env.DEFAULT_REALM_SLUG || "ajay";
@@ -153,9 +191,15 @@ export async function deleteRealm(slug: string): Promise<boolean> {
   try {
     if (!process.env.UPSTASH_REDIS_REST_URL) return false;
 
+    const inviteTokens = await redis.lrange<string>(`realm:${cleanSlug}:invites:tokens`, 0, -1).catch(() => []);
+    const inviteDelKeys = (inviteTokens || []).map((t) => redis.del(`realm:${cleanSlug}:invite:${t}`));
+
     await Promise.all([
       redis.del(`realm:${cleanSlug}:meta`),
       redis.del(`realm:${cleanSlug}:profile`),
+      redis.del(`realm:${cleanSlug}:private_album`),
+      redis.del(`realm:${cleanSlug}:voice_note`),
+      redis.del(`realm:${cleanSlug}:invites:tokens`),
       redis.del(`realm:${cleanSlug}:views:total`),
       redis.del(`realm:${cleanSlug}:referrers`),
       redis.del(`realm:${cleanSlug}:visits:log`),
@@ -164,6 +208,7 @@ export async function deleteRealm(slug: string): Promise<boolean> {
       redis.del(`realm:${cleanSlug}:messages`),
       redis.del(`realm:${cleanSlug}:messages:count`),
       redis.srem("realms:directory", cleanSlug),
+      ...inviteDelKeys,
     ]);
 
     if (cleanSlug === DEFAULT_REALM_SLUG) {
@@ -226,36 +271,11 @@ export async function getRealmProfile(slug: string): Promise<ProfileConfig> {
           const genericTemplate = getGenericStarterProfile(ownerName);
 
           let wasContaminated = false;
-          const cleanedProfile: ProfileConfig = {
-            ...genericTemplate,
+          const cleanedProfile = mergeProfileWithDefaults(genericTemplate, {
             ...stored,
             name: ownerName,
-            images: {
-              ...genericTemplate.images,
-              ...(stored.images || {}),
-            },
-            specs: {
-              ...genericTemplate.specs,
-              ...(stored.specs || {}),
-            },
-            craft: {
-              ...genericTemplate.craft,
-              ...(stored.craft || {}),
-            },
-            rhythm: {
-              ...genericTemplate.rhythm,
-              ...(stored.rhythm || {}),
-            },
-            partnerVision: {
-              ...genericTemplate.partnerVision,
-              ...(stored.partnerVision || {}),
-            },
-            contact: {
-              ...genericTemplate.contact,
-              ...(stored.contact || {}),
-            },
             socials: { ...(stored.socials || {}) },
-          };
+          });
 
           if (isContaminatedWithAjayImages) {
             cleanedProfile.images = { ...genericTemplate.images };
@@ -281,6 +301,8 @@ export async function getRealmProfile(slug: string): Promise<ProfileConfig> {
             cleanedProfile.specs = { ...genericTemplate.specs };
             cleanedProfile.craft = { ...genericTemplate.craft };
             cleanedProfile.rhythm = { ...genericTemplate.rhythm };
+            cleanedProfile.sundayRitual = genericTemplate.sundayRitual;
+            cleanedProfile.valuesMirror = genericTemplate.valuesMirror;
             cleanedProfile.contact = { ...genericTemplate.contact };
             wasContaminated = true;
           }
@@ -298,26 +320,17 @@ export async function getRealmProfile(slug: string): Promise<ProfileConfig> {
           return cleanedProfile;
         }
 
-        // Ajay's default realm
-        const baseTemplate = DEFAULT_PROFILE;
-        return {
-          ...baseTemplate,
-          ...stored,
-          images: { ...baseTemplate.images, ...(stored.images || {}) },
-          specs: { ...baseTemplate.specs, ...(stored.specs || {}) },
-          craft: { ...baseTemplate.craft, ...(stored.craft || {}) },
-          rhythm: { ...baseTemplate.rhythm, ...(stored.rhythm || {}) },
-          partnerVision: { ...baseTemplate.partnerVision, ...(stored.partnerVision || {}) },
-          contact: { ...baseTemplate.contact, ...(stored.contact || {}) },
-          socials: stored.socials !== undefined ? stored.socials : { ...baseTemplate.socials },
-        };
+        // Default master realm (merge any newly introduced optional modules with owner's name)
+        const baseTemplate = getGenericStarterProfile(stored.name || "Ajay");
+        return mergeProfileWithDefaults(baseTemplate, stored);
       }
 
       // Fallback for Ajay if legacy key exists
       if (cleanSlug === DEFAULT_REALM_SLUG) {
         const legacy = await redis.get<ProfileConfig>("profile:config");
         if (legacy && legacy.name) {
-          return { ...DEFAULT_PROFILE, ...legacy };
+          const baseTemplate = getGenericStarterProfile(legacy.name || "Ajay");
+          return mergeProfileWithDefaults(baseTemplate, legacy);
         }
       }
     }
@@ -341,6 +354,49 @@ export async function saveRealmProfile(slug: string, profile: ProfileConfig): Pr
   const cleanSlug = sanitizeSlug(slug);
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
+      // Guard against saving sanitized proxy URLs or masked social tokens back into persistent storage
+      const existing = await redis.get<ProfileConfig>(`realm:${cleanSlug}:profile`);
+      if (existing) {
+        const isProxyImageUrl = (val?: string) => Boolean(val && val.includes(`/api/realms/${cleanSlug}/image`));
+        const imageKeys: Array<keyof ProfileConfig["images"]> = [
+          "hero",
+          "craftDesk",
+          "friendsTrip",
+          "formalWaistcoat",
+          "casualOutdoor",
+        ];
+        for (const k of imageKeys) {
+          if (isProxyImageUrl(profile.images?.[k]) && existing.images?.[k]) {
+            profile.images[k] = existing.images[k];
+          }
+        }
+        if (Array.isArray(profile.craft?.cards) && Array.isArray(existing.craft?.cards)) {
+          profile.craft.cards = profile.craft.cards.map((card, i) => {
+            if (isProxyImageUrl(card.image)) {
+              const prevCard = existing.craft.cards.find((c) => c.id === card.id) || existing.craft.cards[i];
+              return prevCard?.image ? { ...card, image: prevCard.image } : card;
+            }
+            return card;
+          });
+        }
+        if (Array.isArray(profile.rhythm?.extraCards) && Array.isArray(existing.rhythm?.extraCards)) {
+          profile.rhythm.extraCards = profile.rhythm.extraCards.map((card, i) => {
+            if (isProxyImageUrl(card.image)) {
+              const prevCard = existing.rhythm.extraCards?.find((c) => c.id === card.id) || existing.rhythm.extraCards?.[i];
+              return prevCard?.image ? { ...card, image: prevCard.image } : card;
+            }
+            return card;
+          });
+        }
+        if (profile.socials && existing.socials) {
+          for (const key of Object.keys(profile.socials) as Array<keyof NonNullable<ProfileConfig["socials"]>>) {
+            if (profile.socials[key] === "__protected__" && existing.socials[key]) {
+              profile.socials[key] = existing.socials[key];
+            }
+          }
+        }
+      }
+
       if (cleanSlug !== DEFAULT_REALM_SLUG) {
         // Prevent accidental saving of Ajay's default photos to a non-Ajay realm
         const generic = getGenericStarterProfile(profile.name);
@@ -563,7 +619,10 @@ export async function getRealmComprehensiveAnalytics(slug: string) {
     const sectionNames: Record<string, string> = {
       hero: "Hero & Introduction",
       craft: "The Craft & Lab",
+      sunday: "The Sunday Test Vignette",
       rhythm: "Life Rhythm & Downtime",
+      "private-album": "Private Album & Reveal",
+      mirror: "Values Alignment Mirror",
       vision: "Life Partner Vision",
       connect: "Say Hello / Direct Form",
     };
@@ -631,7 +690,7 @@ export function formatRealmDataForLLM(
 
   if (!referrersList) referrersList = "- No referrer data recorded yet.";
 
-  let sectionList = sectionDwell
+  const sectionList = sectionDwell
     .map((s) => {
       const reachPct = totalViews > 0 ? ((s.totalViews / totalViews) * 100).toFixed(1) : "0";
       return `- **${s.name}** [ID: \`${s.sectionId}\`]:\n  - Reached by: ${s.totalViews} visitors (${reachPct}%)\n  - Average Time Spent: ${s.avgSeconds}s (Total: ${s.totalSeconds}s)`;
@@ -723,4 +782,304 @@ export async function saveRealmSmtp(slug: string, config: RealmSmtpConfig): Prom
     console.error(`Failed to save SMTP config for realm ${cleanSlug}:`, err);
   }
   return false;
+}
+
+/**
+ * Verify whether a provided token matches the realm administrator credentials.
+ */
+export function isValidAdminToken(meta: RealmMeta | null, token?: string | null): boolean {
+  if (!meta || !token) return false;
+  const expectedToken = `auth_${meta.slug}_${Buffer.from(meta.password).toString("base64")}`;
+  const legacyKey = process.env.ADMIN_SECRET || "admin2026";
+  return token === expectedToken || token === meta.password || token === legacyKey;
+}
+
+/**
+ * Retrieve stored audio intro record for a realm.
+ */
+export async function getRealmVoiceNote(slug: string): Promise<VoiceNoteRecord | null> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      const stored = await redis.get<VoiceNoteRecord>(`realm:${cleanSlug}:voice_note`);
+      if (stored && typeof stored === "object" && stored.dataUrl) {
+        return stored;
+      }
+    }
+  } catch (err) {
+    console.error(`Failed to load voice note for realm ${cleanSlug}:`, err);
+  }
+  return null;
+}
+
+/**
+ * Store compressed audio intro for a realm in dedicated Redis key.
+ */
+export async function saveRealmVoiceNote(slug: string, record: VoiceNoteRecord): Promise<boolean> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      await redis.set(`realm:${cleanSlug}:voice_note`, record);
+      return true;
+    }
+  } catch (err) {
+    console.error(`Failed to save voice note for realm ${cleanSlug}:`, err);
+  }
+  return false;
+}
+
+/**
+ * Delete audio intro record for a realm.
+ */
+export async function deleteRealmVoiceNote(slug: string): Promise<boolean> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      await redis.del(`realm:${cleanSlug}:voice_note`);
+      return true;
+    }
+  } catch (err) {
+    console.error(`Failed to delete voice note for realm ${cleanSlug}:`, err);
+  }
+  return false;
+}
+
+/**
+ * Issue a cryptographically random 30-day unlock token in Redis for a verified visitor.
+ */
+export async function issueVisitorUnlockToken(
+  slug: string,
+  metadata: {
+    name: string;
+    email?: string;
+    inviteToken?: string;
+    unlockSocials?: boolean;
+  }
+): Promise<string> {
+  const cleanSlug = sanitizeSlug(slug);
+  const unlockToken = crypto.randomUUID();
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      await redis.set(
+        `realm:${cleanSlug}:unlocked:${unlockToken}`,
+        {
+          email: (metadata.email || "").trim().toLowerCase(),
+          name: metadata.name.trim(),
+          inviteToken: metadata.inviteToken,
+          unlockSocials: metadata.unlockSocials !== undefined ? metadata.unlockSocials : true,
+          timestamp: Date.now(),
+        },
+        { ex: 86400 * 30 }
+      );
+    }
+  } catch (err) {
+    console.warn("Could not persist unlock token in Redis:", err);
+  }
+  return unlockToken;
+}
+
+/**
+ * Retrieve and validate a VIP Invite token for a realm (checks revocation and expiry).
+ */
+export async function getVipInviteByToken(slug: string, inviteToken?: string | null): Promise<VipInvite | null> {
+  if (!inviteToken || typeof inviteToken !== "string") return null;
+  const cleanSlug = sanitizeSlug(slug);
+  const cleanToken = inviteToken.trim();
+  if (!cleanToken) return null;
+
+  try {
+    if (!process.env.UPSTASH_REDIS_REST_URL) return null;
+    const invite = await redis.get<VipInvite>(`realm:${cleanSlug}:invite:${cleanToken}`);
+    if (!invite || invite.revoked) return null;
+    if (invite.expiresAt && new Date(invite.expiresAt).getTime() < Date.now()) {
+      return null;
+    }
+    return invite;
+  } catch (err) {
+    console.error(`Failed to get VIP invite for realm ${cleanSlug}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Create a new cryptographic VIP Invite Key for a specific prospective match.
+ */
+export async function createVipInvite(
+  slug: string,
+  input: {
+    guestName: string;
+    source?: string;
+    personalNote?: string;
+    bypassTurnstile?: boolean;
+    unlockPhotos?: boolean;
+    unlockSocials?: boolean;
+    expiresInDays?: number | null;
+  }
+): Promise<VipInvite | null> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    if (!process.env.UPSTASH_REDIS_REST_URL) return null;
+
+    const token = crypto.randomBytes(12).toString("base64url");
+    const now = new Date();
+    const expiresAt =
+      input.expiresInDays && input.expiresInDays > 0
+        ? new Date(now.getTime() + input.expiresInDays * 86400 * 1000).toISOString()
+        : undefined;
+
+    const invite: VipInvite = {
+      id: `vip_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`,
+      token,
+      guestName: input.guestName.trim(),
+      source: (input.source || "Direct").trim(),
+      personalNote: input.personalNote?.trim() || undefined,
+      bypassTurnstile: input.bypassTurnstile !== undefined ? input.bypassTurnstile : true,
+      unlockPhotos: Boolean(input.unlockPhotos),
+      unlockSocials: Boolean(input.unlockSocials),
+      createdAt: now.toISOString(),
+      expiresAt,
+      openCount: 0,
+      revoked: false,
+    };
+
+    await Promise.all([
+      redis.set(`realm:${cleanSlug}:invite:${token}`, invite),
+      redis.lpush(`realm:${cleanSlug}:invites:tokens`, token),
+    ]);
+
+    return invite;
+  } catch (err) {
+    console.error(`Failed to create VIP invite for ${cleanSlug}:`, err);
+    return null;
+  }
+}
+
+/**
+ * List all VIP Invites created for a realm (newest first).
+ */
+export async function listVipInvites(slug: string): Promise<VipInvite[]> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    if (!process.env.UPSTASH_REDIS_REST_URL) return [];
+    const tokens = await redis.lrange<string>(`realm:${cleanSlug}:invites:tokens`, 0, 99);
+    if (!tokens || tokens.length === 0) return [];
+    const invites = await Promise.all(
+      tokens.map((t) => redis.get<VipInvite>(`realm:${cleanSlug}:invite:${t}`))
+    );
+    return invites.filter((item): item is VipInvite => Boolean(item));
+  } catch (err) {
+    console.error(`Failed to list VIP invites for ${cleanSlug}:`, err);
+    return [];
+  }
+}
+
+/**
+ * Record an open event for an active VIP Invite link.
+ */
+export async function recordVipInviteOpen(slug: string, token: string): Promise<VipInvite | null> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    const invite = await getVipInviteByToken(cleanSlug, token);
+    if (!invite) return null;
+    const updated: VipInvite = {
+      ...invite,
+      openCount: (invite.openCount || 0) + 1,
+      lastOpenedAt: new Date().toISOString(),
+    };
+    await redis.set(`realm:${cleanSlug}:invite:${token}`, updated);
+    return updated;
+  } catch (err) {
+    console.error(`Failed to record VIP invite open for ${cleanSlug}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Revoke or delete a VIP Invite link by token.
+ */
+export async function revokeVipInvite(slug: string, token: string, removeCompletely = false): Promise<boolean> {
+  const cleanSlug = sanitizeSlug(slug);
+  try {
+    if (!process.env.UPSTASH_REDIS_REST_URL) return false;
+    if (removeCompletely) {
+      await Promise.all([
+        redis.del(`realm:${cleanSlug}:invite:${token}`),
+        redis.lrem(`realm:${cleanSlug}:invites:tokens`, 0, token),
+      ]);
+      return true;
+    }
+    const existing = await redis.get<VipInvite>(`realm:${cleanSlug}:invite:${token}`);
+    if (!existing) return false;
+    await redis.set(`realm:${cleanSlug}:invite:${token}`, { ...existing, revoked: true });
+    return true;
+  } catch (err) {
+    console.error(`Failed to revoke VIP invite for ${cleanSlug}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Resolve effective authorization across admin credentials, mutual-reveal tokens, and VIP invites.
+ */
+export async function resolveRealmAccess(
+  slug: string,
+  options: {
+    token?: string | null;
+    unlockToken?: string | null;
+    inviteToken?: string | null;
+  }
+): Promise<RealmAccessResult> {
+  const cleanSlug = sanitizeSlug(slug);
+  const meta = await getRealmMeta(cleanSlug);
+
+  const result: RealmAccessResult = {
+    isAdmin: false,
+    hasUnlockToken: false,
+    invite: null,
+    canViewPhotos: false,
+    canViewSocials: false,
+    canBypassTurnstile: false,
+  };
+
+  if (!meta) return result;
+
+  if (isValidAdminToken(meta, options.token)) {
+    return {
+      isAdmin: true,
+      hasUnlockToken: true,
+      invite: null,
+      canViewPhotos: true,
+      canViewSocials: true,
+      canBypassTurnstile: true,
+    };
+  }
+
+  const candidateUnlock = options.unlockToken || options.token;
+  if (candidateUnlock && process.env.UPSTASH_REDIS_REST_URL) {
+    try {
+      const unlockRecord = await redis.get<{ unlockSocials?: boolean; inviteToken?: string }>(
+        `realm:${cleanSlug}:unlocked:${candidateUnlock}`
+      );
+      if (unlockRecord) {
+        result.hasUnlockToken = true;
+        result.canViewPhotos = true;
+        result.canViewSocials = unlockRecord.unlockSocials !== undefined ? Boolean(unlockRecord.unlockSocials) : true;
+        result.canBypassTurnstile = true;
+      }
+    } catch {
+      // Ignore Redis lookup errors
+    }
+  }
+
+  if (options.inviteToken) {
+    const invite = await getVipInviteByToken(cleanSlug, options.inviteToken);
+    if (invite) {
+      result.invite = invite;
+      if (invite.bypassTurnstile) result.canBypassTurnstile = true;
+      if (invite.unlockPhotos) result.canViewPhotos = true;
+      if (invite.unlockSocials) result.canViewSocials = true;
+    }
+  }
+
+  return result;
 }

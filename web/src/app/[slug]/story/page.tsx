@@ -25,13 +25,27 @@ import { SOCIAL_CONFIGS } from "@/components/SocialIcons";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import ContactSection from "@/components/ContactSection";
 import MutualPhotoReveal from "@/components/MutualPhotoReveal";
+import SundayRitualSection from "@/components/SundayRitualSection";
+import ValuesMirrorSection from "@/components/ValuesMirrorSection";
+import VoiceIntroPlayer from "@/components/VoiceIntroPlayer";
 import { DEFAULT_PROFILE, ProfileConfig, getGenericStarterProfile } from "@/lib/profile";
+
+interface ActiveVipInvite {
+  id: string;
+  guestName: string;
+  source: string;
+  personalNote?: string;
+  bypassTurnstile: boolean;
+  unlockPhotos: boolean;
+  unlockSocials: boolean;
+}
 
 function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: string }> }) {
   const { slug } = use(paramsPromise);
   const searchParams = useSearchParams();
   const isExport = searchParams?.get("export") === "true";
   const exportMode = searchParams?.get("mode");
+  const inviteParam = searchParams?.get("invite");
 
   const [profile, setProfile] = useState<ProfileConfig>(() =>
     slug === "ajay" ? DEFAULT_PROFILE : getGenericStarterProfile(slug)
@@ -39,39 +53,96 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
   const [isVerified, setIsVerified] = useState<boolean>(() => Boolean(isExport || searchParams?.get("preview") === "true"));
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
-  const [isPhotoUnlocked, setIsPhotoUnlocked] = useState<boolean>(() => Boolean(isExport && exportMode === "revealed"));
+  const [isPhotoUnlocked, setIsPhotoUnlocked] = useState<boolean>(false);
+  const [activeInvite, setActiveInvite] = useState<ActiveVipInvite | null>(null);
+  const [activeInviteToken, setActiveInviteToken] = useState<string | null>(null);
+  const [activeUnlockToken, setActiveUnlockToken] = useState<string | null>(null);
 
   const dwellTimesRef = useRef<Record<string, number>>({});
   const activeSectionsRef = useRef<Set<string>>(new Set());
   const viewedSectionsRef = useRef<Set<string>>(new Set());
 
-  // Check if visitor has already completed mutual reveal
+  // Check if visitor has already completed mutual reveal or holds a VIP Realm Key
   useEffect(() => {
     if (isExport) {
       setIsVerified(true);
-      setIsPhotoUnlocked(exportMode === "revealed");
+      const adminKey = searchParams?.get("key") || searchParams?.get("token");
+      if (exportMode === "revealed" && adminKey) {
+        setIsPhotoUnlocked(true);
+      }
       return;
     }
+
     try {
-      const stored = sessionStorage.getItem(`unlocked_album_${slug}`);
       const storedToken = sessionStorage.getItem(`unlocked_token_${slug}`);
-      if (stored || storedToken) {
+      if (storedToken) {
+        setActiveUnlockToken(storedToken);
         setIsPhotoUnlocked(true);
       }
     } catch {
       // Ignore
     }
 
+    // Validate VIP Realm Invite key if present in URL or sessionStorage
+    const resolvedInviteToken =
+      inviteParam ||
+      (typeof window !== "undefined" ? sessionStorage.getItem(`invite_token_${slug}`) : null);
+
+    if (resolvedInviteToken) {
+      setActiveInviteToken(resolvedInviteToken);
+      const isFreshUrlInvite = Boolean(inviteParam);
+      fetch(
+        `/api/realms/${slug}/invites?token=${encodeURIComponent(resolvedInviteToken)}${
+          isFreshUrlInvite ? "" : "&peek=true"
+        }`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.valid && data.invite) {
+            setActiveInvite(data.invite);
+            try {
+              sessionStorage.setItem(`invite_token_${slug}`, resolvedInviteToken);
+            } catch {
+              // Ignore
+            }
+            if (data.invite.bypassTurnstile) {
+              setIsVerified(true);
+            }
+            if (data.invite.unlockPhotos) {
+              setIsPhotoUnlocked(true);
+              if (data.unlockToken) {
+                setActiveUnlockToken(data.unlockToken);
+                try {
+                  sessionStorage.setItem(`unlocked_token_${slug}`, data.unlockToken);
+                  if (Array.isArray(data.album)) {
+                    sessionStorage.setItem(`unlocked_album_${slug}`, JSON.stringify(data.album));
+                  }
+                } catch {
+                  // Ignore
+                }
+                window.dispatchEvent(
+                  new CustomEvent("mutual-reveal-unlocked", {
+                    detail: { album: data.album || [], unlockToken: data.unlockToken },
+                  })
+                );
+              }
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     const handleUnlocked = (e: any) => {
       setIsPhotoUnlocked(true);
       const token = e.detail?.unlockToken;
       if (token) {
+        setActiveUnlockToken(token);
         try {
           sessionStorage.setItem(`unlocked_token_${slug}`, token);
         } catch {
           // Ignore
         }
-        // Refetch profile with unlock token so server provides crystal-clear photo URLs
+        // Refetch profile with unlock token so server provides crystal-clear photo URLs & allowed socials
         fetch(`/api/realms/${slug}/profile?unlockToken=${encodeURIComponent(token)}`)
           .then((res) => res.json())
           .then((data) => {
@@ -85,35 +156,50 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
 
     window.addEventListener("mutual-reveal-unlocked", handleUnlocked);
     return () => window.removeEventListener("mutual-reveal-unlocked", handleUnlocked);
-  }, [slug, isExport, exportMode]);
+  }, [slug, isExport, exportMode, inviteParam, searchParams]);
 
   const triggerMutualReveal = () => {
     window.dispatchEvent(new CustomEvent("open-mutual-reveal"));
   };
 
-  // 1. Fetch live dynamic profile for this realm (with unlock token if previously verified)
+  // 1. Fetch live dynamic profile for this realm (passing auth/unlock/invite credentials if available)
   useEffect(() => {
     const adminKey = searchParams?.get("key") || searchParams?.get("token");
-    const unlockToken = typeof window !== "undefined" ? sessionStorage.getItem(`unlocked_token_${slug}`) : null;
-    const profileUrl = adminKey
-      ? `/api/realms/${slug}/profile?key=${encodeURIComponent(adminKey)}`
-      : unlockToken
-      ? `/api/realms/${slug}/profile?unlockToken=${encodeURIComponent(unlockToken)}`
-      : `/api/realms/${slug}/profile`;
+    const unlockToken =
+      activeUnlockToken ||
+      (typeof window !== "undefined" ? sessionStorage.getItem(`unlocked_token_${slug}`) : null);
+    const invToken =
+      inviteParam ||
+      activeInviteToken ||
+      (typeof window !== "undefined" ? sessionStorage.getItem(`invite_token_${slug}`) : null);
+
+    const params = new URLSearchParams();
+    if (adminKey) params.set("key", adminKey);
+    if (unlockToken) params.set("unlockToken", unlockToken);
+    if (invToken) params.set("invite", invToken);
+    const qs = params.toString();
+    const profileUrl = `/api/realms/${slug}/profile${qs ? `?${qs}` : ""}`;
 
     fetch(profileUrl)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.name) {
           setProfile(data);
+          // Authoritative sync: server returns proxy `mode=unrevealed` only when not authorized to view photos
+          const heroUrl = data.images?.hero || "";
+          if (heroUrl && !heroUrl.includes("mode=unrevealed")) {
+            setIsPhotoUnlocked(true);
+          } else if (isExport && exportMode !== "revealed") {
+            setIsPhotoUnlocked(false);
+          }
         }
       })
       .catch((err) => console.warn("Using fallback profile:", err));
-  }, [slug, searchParams]);
+  }, [slug, searchParams, activeUnlockToken, inviteParam, activeInviteToken, isExport, exportMode]);
 
-  // 2. Track initial page view via headers & document.referrer (No ?ref needed!)
+  // 2. Track initial page view via headers & document.referrer
   useEffect(() => {
-    const queryRef = searchParams?.get("ref") || null;
+    const queryRef = searchParams?.get("ref") || (activeInvite ? `${activeInvite.source} (VIP: ${activeInvite.guestName})` : null);
     const clientRef = typeof document !== "undefined" ? document.referrer || null : null;
 
     fetch(`/api/realms/${slug}/track`, {
@@ -124,11 +210,11 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
         clientReferrer: queryRef || clientRef,
       }),
     }).catch(() => {});
-  }, [slug, searchParams]);
+  }, [slug, searchParams, activeInvite]);
 
   // 3. Section Dwell Tracking & IntersectionObserver
   useEffect(() => {
-    const sections = ["hero", "craft", "rhythm", "vision", "connect"];
+    const sections = ["hero", "craft", "sunday", "rhythm", "private-album", "mirror", "vision", "connect"];
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -288,6 +374,35 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
 
         {/* Hero Section */}
         <section data-section="hero" className="relative pt-12 pb-16 px-4 sm:px-6 max-w-5xl mx-auto">
+          {activeInvite && !isExport && (
+            <div className="mb-8 p-5 rounded-3xl bg-gradient-to-r from-emerald-950/50 via-zinc-900/90 to-zinc-950 border border-emerald-500/30 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-500">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    Personal Invitation • Welcome, {activeInvite.guestName}
+                  </span>
+                  {activeInvite.unlockPhotos && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <Unlock className="w-3 h-3" /> Full Photos Unlocked
+                    </span>
+                  )}
+                </div>
+                {activeInvite.personalNote && (
+                  <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-2xl pt-1">
+                    &ldquo;{activeInvite.personalNote}&rdquo;
+                  </p>
+                )}
+              </div>
+              <a
+                href="#connect"
+                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition shrink-0 self-start sm:self-center shadow-lg shadow-emerald-500/20"
+              >
+                Leave a Note ↓
+              </a>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-5 relative group">
               <div
@@ -395,11 +510,15 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                 );
                 if (activePlatforms.length === 0) return null;
 
+                const socialsMasked =
+                  !isPhotoUnlocked ||
+                  activePlatforms.every((s) => profile.socials![s.key] === "__protected__");
+
                 return (
                   <div className="relative pt-1 max-w-md">
                     <div
                       className={`flex flex-wrap items-center gap-2 transition-all duration-500 ${
-                        !isPhotoUnlocked
+                        socialsMasked
                           ? "blur-md opacity-30 pointer-events-none select-none"
                           : "blur-0 opacity-100"
                       }`}
@@ -407,6 +526,17 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                       {activePlatforms.map((s) => {
                         const Icon = s.icon;
                         const url = profile.socials![s.key]!;
+                        if (socialsMasked || url === "__protected__") {
+                          return (
+                            <span
+                              key={s.key}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium ${s.badgeClass}`}
+                            >
+                              <Icon className={`w-3.5 h-3.5 ${s.color}`} />
+                              <span>{s.label}</span>
+                            </span>
+                          );
+                        }
                         const href =
                           url.startsWith("http://") || url.startsWith("https://")
                             ? url
@@ -427,7 +557,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                       })}
                     </div>
 
-                    {!isPhotoUnlocked && (
+                    {socialsMasked && (
                       <button
                         type="button"
                         onClick={triggerMutualReveal}
@@ -447,6 +577,19 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
                   </div>
                 );
               })()}
+
+              {/* Voice Note Atmosphere Player (renders only when audio is recorded/enabled) */}
+              {!isExport && (
+                <VoiceIntroPlayer
+                  slug={slug}
+                  ownerName={profile.name}
+                  voiceNote={profile.voiceNote}
+                  isUnlocked={isPhotoUnlocked}
+                  inviteToken={activeInviteToken}
+                  unlockToken={activeUnlockToken}
+                  onRequestUnlock={triggerMutualReveal}
+                />
+              )}
 
               <div className="pt-2">
                 <a
@@ -539,6 +682,18 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
             </div>
           </div>
         </section>
+
+        {/* Section 1.5: The Sunday Test Interactive Vignette */}
+        {profile.sundayRitual?.enabled !== false &&
+          profile.sundayRitual?.moments &&
+          profile.sundayRitual.moments.length > 0 && (
+            <SundayRitualSection
+              ownerName={profile.name}
+              title={profile.sundayRitual.title}
+              subtitle={profile.sundayRitual.subtitle}
+              moments={profile.sundayRitual.moments}
+            />
+          )}
 
         {/* Section 2: Visual Moments & Life Rhythm */}
         <section data-section="rhythm" className="py-16 px-4 sm:px-6 max-w-5xl mx-auto border-t border-zinc-900">
@@ -708,8 +863,29 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
             photoCount={profile.privateAlbum?.photoCount || 4}
             categories={profile.privateAlbum?.categories}
             turnstileToken={turnstileToken}
+            referrer={activeInvite ? `${activeInvite.source} (VIP: ${activeInvite.guestName})` : undefined}
           />
         )}
+
+        {/* Section 2.8: Values & Communication Mirror */}
+        {!isExport &&
+          profile.valuesMirror?.enabled !== false &&
+          profile.valuesMirror?.scenarios &&
+          profile.valuesMirror.scenarios.length > 0 && (
+            <ValuesMirrorSection
+              ownerName={profile.name}
+              title={profile.valuesMirror.title}
+              subtitle={profile.valuesMirror.subtitle}
+              scenarios={profile.valuesMirror.scenarios}
+              onBringToNote={(summary) => {
+                window.dispatchEvent(
+                  new CustomEvent("prefill-contact-note", { detail: { summary } })
+                );
+                const el = document.getElementById("connect");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+            />
+          )}
 
         {/* Section 3: Life Partner Vision */}
         <section id="partner-vision" data-section="vision" className="py-16 px-4 sm:px-6 max-w-5xl mx-auto border-t border-zinc-900">
@@ -747,6 +923,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
           title={profile.contact.title}
           subtitle={profile.contact.subtitle}
           notePlaceholder={profile.contact.notePlaceholder}
+          referrer={activeInvite ? `${activeInvite.source} (VIP: ${activeInvite.guestName})` : undefined}
           turnstileToken={turnstileToken}
         />
 
