@@ -37,82 +37,82 @@ export default function ImportFromLLMModal({
 
   if (!isOpen) return null;
 
-  const promptTemplate = `You are an expert personal branding and storytelling consultant. 
-Help me craft an authentic, emotionally mature Story Realm profile. 
-Here is my raw background, bio, or resume:
+  const promptTemplate = `You are helping someone write a natural, down-to-earth personal profile for Story Realm.
+Avoid stiff buzzwords, clichés ("sanctuary", "unhurried", "intentional", "craft", "resonate"), and NEVER use em-dashes. Write like a real person talking over coffee.
+Here is their raw background, bio, or resume:
 [PASTE YOUR RESUME, DATING BIO, OR THOUGHTS HERE]
 
-Please structure your response into this exact JSON format. Focus on emotional maturity, clear craftsmanship, and genuine life values:
+Please structure your response into this exact JSON format:
 
 {
   "name": "${currentProfile.name || "Your Name"}",
-  "tagline": "Brief professional / creative title",
-  "headline": "A captivating, intentional 1-line headline about what you're seeking",
-  "bio1": "A warm 2-3 sentence introduction sharing your craft, where you're based, and your space.",
-  "bio2": "A thoughtful 2-3 sentence reflection on your relationship philosophy, honesty, and values.",
+  "tagline": "Brief job or personal title",
+  "headline": "A clear, natural 1-line headline about what you are looking for",
+  "bio1": "A warm 2-3 sentence introduction sharing what you do, where you live, and your day-to-day setup.",
+  "bio2": "A grounded 2-3 sentence reflection on how you communicate and what matters to you in a relationship.",
   "specs": {
     "height": "${currentProfile.specs?.height || "5'10\\\" (178 cm)"}",
-    "base": "${currentProfile.specs?.base || "City, Region"}",
+    "base": "${currentProfile.specs?.base || "City, Country"}",
     "lifestyle": "Non-Smoker • Active",
-    "career": "Your Field / Craft"
+    "career": "Your Field / Role"
   },
   "craft": {
-    "title": "A headline about your craft or problem-solving approach",
-    "subtitle": "A short paragraph describing what drives your daily focus and standards",
+    "title": "A straightforward headline about your work and mindset",
+    "subtitle": "A short sentence on what keeps you curious or motivated day to day",
     "cards": [
       {
         "id": "craft1",
-        "title": "Core Craft",
-        "desc": "How you approach your profession and solving complex problems."
+        "title": "Work & Focus",
+        "desc": "How you approach your work and solving hard problems."
       },
       {
         "id": "craft2",
         "title": "Hobbies & Passions",
-        "desc": "Projects, physical activities, or creative pursuits outside of work."
+        "desc": "Projects, sports, or interests outside of work."
       },
       {
         "id": "craft3",
-        "title": "Emotional Balance & Mindset",
-        "desc": "Your emotional awareness, communication style, or mindfulness."
+        "title": "Mindset & Communication",
+        "desc": "How you handle stress, decisions, and staying balanced."
       }
     ]
   },
   "rhythm": {
-    "title": "Daily rhythm, downtime, and weekends",
-    "subtitle": "How you balance focused ambition with downtime and hosting",
-    "highlightTitle": "Weekend Escapes & Discoveries",
-    "highlightDesc": "Specific things you enjoy doing on weekend mornings or road trips."
+    "title": "Daily life, travel, and weekends",
+    "subtitle": "How you balance work focus with time off and the people you care about",
+    "highlightTitle": "Weekend Drives & Downtime",
+    "highlightDesc": "Specific things you enjoy doing on weekend mornings or trips."
   },
   "partnerVision": {
     "title": "The partner I hope to build a life with",
-    "subtitle": "What you value most in an equal, ambitious life partnership",
+    "subtitle": "What matters most in an equal, supportive relationship",
     "pillars": [
       {
         "num": "01",
-        "title": "Ambition & Her Own Craft",
-        "desc": "Someone who has her own career, passions, and intellectual curiosity."
+        "title": "Her Own Path & Curiosity",
+        "desc": "Someone who has her own career, interests, and point of view."
       },
       {
         "num": "02",
-        "title": "Open & Mature Communication",
-        "desc": "Direct, calm communication without mind games or silent treatments."
+        "title": "Honest, Direct Talk",
+        "desc": "Saying things plainly and working through disagreements calmly, without silent treatments."
       },
       {
         "num": "03",
-        "title": "Equal Partnership",
-        "desc": "A modern, supportive partnership where decisions and victories are shared."
+        "title": "True Partnership",
+        "desc": "A practical, supportive team where decisions and wins are shared."
       },
       {
         "num": "04",
-        "title": "Peaceful Sanctuary",
-        "desc": "Building a peaceful home grounded in mutual trust, warmth, and boundaries."
+        "title": "A Calm Home",
+        "desc": "Building a warm, steady home based on mutual trust and clear boundaries."
       }
     ]
   },
   "contact": {
     "title": "Say Hello to ${currentProfile.name || "Me"}",
-    "subtitle": "A warm invite encouraging thoughtful notes from potential matches",
-    "notePlaceholder": "What resonated with you? Tell me a little about your world..."
+    "subtitle": "A friendly invite encouraging real notes from people who want to connect",
+    "notePlaceholder": "Say hi, tell me a bit about yourself, or ask me anything..."
   }
 }
 
@@ -321,7 +321,7 @@ IMPORTANT: Output ONLY the valid JSON object, without conversational filler.`.tr
                 rows={10}
                 value={rawInput}
                 onChange={(e) => handleParseInput(e.target.value)}
-                placeholder='{\n  "name": "Your Name",\n  "headline": "A quiet space to connect intentionally...",\n  "craft": {\n    "title": "What I build and care about..."\n  }\n}'
+                placeholder='{\n  "name": "Your Name",\n  "headline": "Looking for a grounded, lasting partnership...",\n  "craft": {\n    "title": "What I work on and care about..."\n  }\n}'
                 className="w-full p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-700 font-mono text-xs focus:outline-none focus:border-purple-500/60 resize-none leading-relaxed"
               />
             </div>

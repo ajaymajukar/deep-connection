@@ -188,7 +188,7 @@ export async function getComprehensiveAnalytics() {
     const sectionNames: Record<string, string> = {
       hero: "Hero & Introduction",
       craft: "The Craft & Engineering Space",
-      rhythm: "Life Rhythm, Tilakwadi & Western Ghats",
+      rhythm: "Life Rhythm, Travel & Downtime",
       vision: "Life Partner Vision & Expectations",
       connect: "Say Hello / Direct Contact Form",
     };

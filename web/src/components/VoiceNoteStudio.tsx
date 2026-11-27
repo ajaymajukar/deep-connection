@@ -33,7 +33,7 @@ export default function VoiceNoteStudio({
 }: VoiceNoteStudioProps) {
   const [title, setTitle] = useState(voiceNote?.title || `A Quick Voice Intro from ${ownerName}`);
   const [subtitle, setSubtitle] = useState(
-    voiceNote?.subtitle || "Text rarely captures tone or warmth—here is 30 seconds in my own voice."
+    voiceNote?.subtitle || "Text does not always get tone across, so here is 30 seconds in my own voice."
   );
   const [transcript, setTranscript] = useState(voiceNote?.transcript || "");
   const [requireUnlock, setRequireUnlock] = useState(Boolean(voiceNote?.requireUnlock));
@@ -250,8 +250,8 @@ export default function VoiceNoteStudio({
             </h4>
             <p className="text-[11px] text-zinc-400">
               {hasServerAudio
-                ? "Audio live! Hearing your voice boosts emotional safety 3x."
-                : "Optional 20–45s voice note (hidden on public page until recorded)."}
+                ? "Audio is live. A short voice clip makes a first impression much warmer."
+                : "Optional 20 to 45s voice note (hidden on public page until recorded)."}
             </p>
           </div>
         </div>

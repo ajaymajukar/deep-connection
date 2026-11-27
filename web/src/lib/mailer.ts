@@ -118,15 +118,15 @@ export async function sendAlertToAjay(payload: NotificationPayload) {
 export async function sendConfirmationToVisitor(toEmail: string, name: string, realmOwnerName: string = "Ajay") {
   if (!masterSmtpUser || !masterSmtpPass) return false;
 
-  const subject = `Thanks for your note, ${name} — ${realmOwnerName}`;
+  const subject = `Thanks for your note, ${name} | ${realmOwnerName}`;
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; background: #ffffff; color: #18181b; border-radius: 10px; border: 1px solid #e4e4e7;">
       <h3 style="margin-top: 0; color: #09090b; font-size: 18px;">Hey ${escapeHtml(name)},</h3>
       <p style="font-size: 15px; line-height: 1.6; color: #3f3f46;">
-        Thanks for taking the time to read through my story and leaving a note. I know the online dating world can often feel noisy and impersonal, which is why I created this quiet space to connect more intentionally.
+        Thanks for reading through my page and taking a minute to write. Dating apps usually move too fast for real conversations, so I appreciate the note.
       </p>
       <p style="font-size: 15px; line-height: 1.6; color: #3f3f46;">
-        I've received your message directly in my personal inbox. I'll read through your note thoughtfully and reply back soon.
+        Your message went straight to my personal inbox, and I will read through it and reply soon.
       </p>
       <p style="font-size: 15px; line-height: 1.6; color: #3f3f46; margin-bottom: 24px;">
         Wishing you a peaceful rest of your day!
@@ -273,15 +273,15 @@ export async function sendCustomConfirmationToVisitor(options: {
     },
   });
 
-  const subject = `Thanks for your note, ${visitorName} — ${realmOwnerName}`;
+  const subject = `Thanks for your note, ${visitorName} | ${realmOwnerName}`;
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; background: #ffffff; color: #18181b; border-radius: 10px; border: 1px solid #e4e4e7;">
       <h3 style="margin-top: 0; color: #09090b; font-size: 18px;">Hey ${escapeHtml(visitorName)},</h3>
       <p style="font-size: 15px; line-height: 1.6; color: #3f3f46;">
-        Thanks for taking the time to read through my story and leaving a note. I know the online dating world can often feel noisy and impersonal, which is why I created this quiet space to connect more intentionally.
+        Thanks for reading through my page and taking a minute to write. Dating apps usually move too fast for real conversations, so I appreciate the note.
       </p>
       <p style="font-size: 15px; line-height: 1.6; color: #3f3f46;">
-        I've received your message directly in my personal inbox. I'll read through your note thoughtfully and reply back soon.
+        Your message went straight to my personal inbox, and I will read through it and reply soon.
       </p>
       <p style="font-size: 15px; line-height: 1.6; color: #3f3f46; margin-bottom: 24px;">
         Wishing you a peaceful rest of your day!

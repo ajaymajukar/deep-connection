@@ -54,10 +54,10 @@ export default function ContactSection({
   const displayTitle = title || `Say Hello to ${ownerName}`;
   const displaySubtitle =
     subtitle ||
-    `If any part of my story, values, or rhythm resonated with you, I'd love to hear your thoughts. Your note reaches my personal inbox directly, without middleman algorithms or swiping games.`;
+    `If anything here caught your attention, send me a note. It goes straight to my personal inbox, no app algorithms in between.`;
   const displayPlaceholder =
     notePlaceholder ||
-    "What resonated with you? Tell me a little about your world, what you're passionate about, or ask me anything...";
+    "Say hi, tell me a bit about yourself and what you are into, or ask me anything...";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,7 +277,7 @@ export default function ContactSection({
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
-                Social or Direct Handle <span className="text-zinc-500 font-normal lowercase">(optional — Instagram, LinkedIn, Telegram, etc.)</span>
+                Social or Direct Handle <span className="text-zinc-500 font-normal lowercase">(optional: Instagram, LinkedIn, Telegram, etc.)</span>
               </label>
               <input
                 type="text"
@@ -306,7 +306,7 @@ export default function ContactSection({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                  Attach a Photo <span className="text-zinc-500 font-normal lowercase">(optional — unlocks {ownerName}&apos;s private album)</span>
+                  Attach a Photo <span className="text-zinc-500 font-normal lowercase">(optional: unlocks {ownerName}&apos;s private album)</span>
                 </label>
                 {photoDataUrl && (
                   <button
@@ -358,7 +358,7 @@ export default function ContactSection({
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-xs text-zinc-500 flex items-center gap-1.5 order-2 sm:order-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Replies usually within 24–48 hours
+                Replies usually within 24 to 48 hours
               </p>
 
               <button

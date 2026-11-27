@@ -306,7 +306,7 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
   };
 
   const handleCopyRedditPitch = () => {
-    const pitch = `Hey! I know sharing external links on Reddit feels super sketchy with all the random IP loggers and phishers floating around, so I just snapshotted my portfolio deck into a quick 3-slide image instead.\n\n(I've kept my face blurred for privacy until we mutually exchange, but my story, craft, and what I'm looking for are all here. Have a look! 😊)`;
+    const pitch = `Hey! I know sharing external links on Reddit feels super sketchy with all the random IP loggers and phishers floating around, so I just snapshotted my portfolio deck into a quick 3-slide image instead.\n\n(I've kept my face blurred for privacy until we exchange photos, but my story, work, and what I'm looking for are all here. Have a look! 😊)`;
     navigator.clipboard.writeText(pitch);
     setCopiedRedditPitch(true);
     setTimeout(() => setCopiedRedditPitch(false), 2500);
@@ -849,7 +849,7 @@ export default function RealmAdminPage({ params }: { params: Promise<{ slug: str
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 font-mono text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
-              {`Hey! I know sharing external links on Reddit feels super sketchy with all the random IP loggers and phishers floating around, so I just snapshotted my portfolio deck into a quick 3-slide image instead.\n\n(I've kept my face blurred for privacy until we mutually exchange, but my story, craft, and what I'm looking for are all here. Have a look! 😊)`}
+              {`Hey! I know sharing external links on Reddit feels super sketchy with all the random IP loggers and phishers floating around, so I just snapshotted my portfolio deck into a quick 3-slide image instead.\n\n(I've kept my face blurred for privacy until we exchange photos, but my story, work, and what I'm looking for are all here. Have a look! 😊)`}
             </div>
           </div>
         </div>

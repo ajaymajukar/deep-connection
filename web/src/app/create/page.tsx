@@ -82,7 +82,7 @@ export default function CreateRealmPage() {
           Create Your Story Realm
         </h1>
         <p className="mt-2 text-xs sm:text-sm text-zinc-400 leading-relaxed">
-          Launch your own private, intentional matchmaking page with zero-surname privacy, dwell heatmaps, and in-place visual editing.
+          Launch your own private matchmaking page with surname privacy, reader engagement stats, and inline visual editing.
         </p>
 
         {errorMessage && (

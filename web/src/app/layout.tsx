@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Deep Connection | Intentional Matchmaking & Story Engine",
-  description: "A private, intentional introduction platform — life philosophy, engineering craft, daily rhythm, and partnership vision.",
+  title: "Deep Connection | Personal Story & Matchmaking Page",
+  description: "A private introduction page covering work, daily life, hobbies, and what matters in a partner.",
   robots: {
     index: false,
     follow: false,

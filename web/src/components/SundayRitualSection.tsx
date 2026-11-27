@@ -13,8 +13,8 @@ interface SundayRitualSectionProps {
 
 export default function SundayRitualSection({
   ownerName,
-  title = "The Sunday Test: A Day in My World",
-  subtitle = "Adjectives rarely show what daily life with someone feels like. Here is how a favorite unhurried Sunday unfolds.",
+  title = "A Typical Sunday",
+  subtitle = "Adjectives rarely tell you what living with someone actually feels like. Here is how a good Sunday goes for me.",
   moments,
 }: SundayRitualSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);

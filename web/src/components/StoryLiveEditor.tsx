@@ -877,7 +877,7 @@ export default function StoryLiveEditor({
                       {
                         id: `craft_${Date.now()}`,
                         title: "New Focus Area",
-                        desc: "Describe your technical domain, craft, or creative discipline...",
+                        desc: "Describe a project, field of work, or personal interest...",
                       },
                     ];
                     updateField((p) => ({
@@ -887,7 +887,7 @@ export default function StoryLiveEditor({
                   }}
                   className="w-full py-3 rounded-2xl border border-dashed border-zinc-700 hover:border-emerald-500/50 text-xs font-semibold text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/5 transition flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" /> Add Craft Pillar / Focus Area
+                  <Plus className="w-4 h-4" /> Add Focus Area / Interest
                 </button>
               )}
             </div>
@@ -904,7 +904,7 @@ export default function StoryLiveEditor({
                     <Clock className="w-4 h-4" /> The Sunday Test Vignette (Interactive Timeline)
                   </span>
                   <p className="text-xs text-zinc-400">
-                    Show what an actual unhurried Sunday in your world feels like.
+                    Show what a typical Sunday off in your life looks like.
                   </p>
                 </div>
 
@@ -1152,10 +1152,10 @@ export default function StoryLiveEditor({
                 ) : (
                   <>
                     <h4 className="text-sm font-semibold text-zinc-200">
-                      {profile.rhythm.card1Title || "Western Ghats Drives & Mountain Air"}
+                      {profile.rhythm.card1Title || "Family Time & Coastal Trips"}
                     </h4>
                     <p className="mt-1 text-xs text-zinc-400">
-                      {profile.rhythm.card1Desc || "Belagavi sits right at the threshold of the Western Ghats. Taking peaceful road trips through the misty ghats and pausing at quiet viewpoints is my favorite way to clear my mind."}
+                      {profile.rhythm.card1Desc || "Getting away to the coast or out into the hills with family is how I reset on weekends. Simple drives, ocean air, and good company go a long way."}
                     </p>
                   </>
                 )}

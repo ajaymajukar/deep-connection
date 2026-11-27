@@ -30,7 +30,7 @@ const HARMONY_BADGES: Record<string, { label: string; className: string }> = {
 export default function ValuesMirrorSection({
   ownerName,
   title = "Values & Communication Mirror",
-  subtitle = "No matchmaking scores or gimmicks—explore how our instincts harmonize across everyday relationship scenarios.",
+  subtitle = "No compatibility scores or gimmicks, just a quick look at how we handle everyday situations.",
   scenarios,
   onBringToNote,
 }: ValuesMirrorSectionProps) {
@@ -54,7 +54,7 @@ export default function ValuesMirrorSection({
         const chosenId = selections[s.id];
         const chosenOpt = s.options.find((o) => o.id === chosenId);
         if (!chosenOpt) return null;
-        return `• ${s.topic}: "${chosenOpt.shortTag}" — ${chosenOpt.label}`;
+        return `• ${s.topic} (${chosenOpt.shortTag}): ${chosenOpt.label}`;
       })
       .filter(Boolean);
 
@@ -179,7 +179,7 @@ export default function ValuesMirrorSection({
               Skip the awkward &ldquo;Hey, how are you?&rdquo; opener
             </p>
             <p className="text-xs text-zinc-400">
-              Optionally pre-fill your note box below with the {exploredCount} reflection{exploredCount > 1 ? "s" : ""} you picked—you can edit every word before sending.
+              You can pre-fill your note below with the {exploredCount} answer{exploredCount > 1 ? "s" : ""} you picked, and edit anything before sending.
             </p>
           </div>
           <button

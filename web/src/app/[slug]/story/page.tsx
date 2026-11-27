@@ -325,11 +325,11 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               {profile.name}&apos;s Story
             </h1>
             <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-              A private, intentional space to share who I am, what I build, and the life partner I&apos;m seeking.
+              A quiet page to share what I do, how I spend my time, and what I am looking for in a partner.
             </p>
 
             <div className="my-6 py-4 px-3 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 flex flex-col items-center justify-center">
-              <p className="text-xs text-zinc-500 mb-2 font-medium">Quick bot check — zero email required:</p>
+              <p className="text-xs text-zinc-500 mb-2 font-medium">Quick bot check (no email needed):</p>
               <TurnstileWidget
                 onVerify={handleTurnstileSuccess}
                 onError={(err) => setVerificationError(err)}
@@ -736,10 +736,10 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
-                  {profile.rhythm.card1Title || "Western Ghats Drives & Mountain Air"}
+                  {profile.rhythm.card1Title || "Family Time & Coastal Trips"}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {profile.rhythm.card1Desc || "Belagavi sits right at the threshold of the Western Ghats. Taking peaceful road trips through the misty ghats and pausing at quiet viewpoints is my favorite way to clear my mind."}
+                  {profile.rhythm.card1Desc || "Getting away to the coast or out into the hills with family is how I reset on weekends. Simple drives, ocean air, and good company go a long way."}
                 </p>
               </div>
             </div>
@@ -804,10 +804,10 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               </div>
               <div className="p-4 bg-zinc-900/90 border-t border-zinc-800/60">
                 <h4 className="text-sm font-semibold text-zinc-200">
-                  {profile.rhythm.card3Title || "Space to Think & Quiet Travel"}
+                  {profile.rhythm.card3Title || "Work Travel & New Places"}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {profile.rhythm.card3Desc || "Looking out over the cloudscape between deep-focus work blocks. Taking time to disconnect, travel, and let my mind wander keeps me grounded and creative."}
+                  {profile.rhythm.card3Desc || "On the road occasionally for work and always glad for a window seat. Seeing new places and stepping out of routine keeps life interesting."}
                 </p>
               </div>
             </div>
@@ -937,7 +937,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
               Want your own personal Story Realm?
             </h3>
             <p className="text-xs text-zinc-400 leading-relaxed max-w-md mx-auto">
-              Cut through superficial swiping apps and arranged marriage queues. Create your own private, intentional matchmaking page with zero-surname privacy and in-context visual editing.
+              Skip shallow dating app bios and formal matchmaking templates. Make a personal page about your actual life with surname privacy and easy inline editing.
             </p>
             <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <Link
@@ -959,7 +959,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
         </section>
 
         <footer className="py-12 border-t border-zinc-900 text-center text-xs text-zinc-600">
-          <p>Curated & built by {profile.name} • {profile.specs.base}</p>
+          <p>Written &amp; built by {profile.name} • {profile.specs.base}</p>
           <p className="mt-1">Realm: /{slug} • Zero commercial tracking</p>
         </footer>
       </div>

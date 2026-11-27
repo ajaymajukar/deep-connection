@@ -48,7 +48,7 @@ export default function VipInvitesTab({ slug, token, ownerName }: VipInvitesTabP
   const [guestName, setGuestName] = useState("");
   const [source, setSource] = useState("Aisle");
   const [personalNote, setPersonalNote] = useState(
-    "Loved our conversation so far—put together this quiet personal space to share more of my story, values, and daily rhythm beyond short app prompts."
+    "Enjoyed talking with you so far. I put together this small page so you can get a clearer sense of my work, day-to-day life, and what I am looking for beyond short app prompts."
   );
   const [bypassTurnstile, setBypassTurnstile] = useState(true);
   const [unlockPhotos, setUnlockPhotos] = useState(true);
@@ -161,7 +161,7 @@ export default function VipInvitesTab({ slug, token, ownerName }: VipInvitesTabP
 
   const copyPitch = (invite: VipInviteRecord) => {
     const url = buildUrl(invite.token);
-    const msg = `Hey ${invite.guestName}! I really enjoy our vibe so far. Since dating apps barely leave space for nuance, I created a quiet personal story space about my values, daily rhythm, and what I'm building in life.\n\nMade a personal pass for you here: ${url}\n\nNo pressure at all—explore whenever you have a few calm minutes!`;
+    const msg = `Hey ${invite.guestName}! Enjoyed talking with you so far. Dating profiles never have much room to say anything real, so I made a private page with a bit more about my life, work, and what I value.\n\nHere is a personal link for you: ${url}\n\nNo rush at all, take a look whenever you have a spare minute.`;
     navigator.clipboard.writeText(msg);
     setCopiedId(`msg_${invite.id}`);
     setTimeout(() => setCopiedId(null), 2500);

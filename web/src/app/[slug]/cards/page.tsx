@@ -195,10 +195,10 @@ export default async function RealmCardsPage({
             <Cpu className="w-5 h-5" /> Professional Focus & Philosophy
           </span>
           <h2 className="text-5xl font-black text-zinc-100 leading-tight">
-            {profile.craft.title || "Crafting Resilient Systems & Intentional Work"}
+            {profile.craft.title || "Engineering Systems That Hold Up"}
           </h2>
           <p className="text-2xl text-zinc-400 leading-relaxed">
-            {profile.craft.subtitle || "How I approach complex engineering challenges, problem-solving, and continuous growth."}
+            {profile.craft.subtitle || "How I think about work, hard problems, and learning over time."}
           </p>
         </div>
 
@@ -278,10 +278,10 @@ export default async function RealmCardsPage({
             <Heart className="w-5 h-5" /> What I Value Most in a Partner
           </span>
           <h2 className="text-5xl font-black text-zinc-100 leading-tight">
-            {profile.partnerVision.title || "Building an Equal, Intentional Partnership"}
+            {profile.partnerVision.title || "What I Hope to Build Together"}
           </h2>
           <p className="text-2xl text-zinc-400 leading-relaxed">
-            {profile.partnerVision.subtitle || "Beyond checklists—what actually matters when life settles into quiet daily rhythms."}
+            {profile.partnerVision.subtitle || "Beyond checklists, what actually matters when everyday life settles in."}
           </p>
         </div>
 
@@ -309,7 +309,7 @@ export default async function RealmCardsPage({
         <div className="p-6 rounded-3xl bg-zinc-900/80 border border-zinc-800 text-zinc-300 flex items-center gap-4">
           <Sparkles className="w-8 h-8 text-emerald-400 shrink-0" />
           <p className="text-xl">
-            Looking for a best friend, intellectual equal, and reliable teammate to navigate life with.
+            Looking for a best friend, an equal partner, and someone I can rely on through ordinary days and big changes.
           </p>
         </div>
 
@@ -350,10 +350,10 @@ export default async function RealmCardsPage({
             <Compass className="w-5 h-5" /> Outside of Work & Screen Time
           </span>
           <h2 className="text-5xl font-black text-zinc-100 leading-tight">
-            {profile.rhythm.title || "Visual Rhythm & Quiet Hours"}
+            {profile.rhythm.title || "Outside Work & Travel"}
           </h2>
           <p className="text-2xl text-zinc-400 leading-relaxed">
-            {profile.rhythm.subtitle || "Intentional travel, coastal roots, and unhurried conversations."}
+            {profile.rhythm.subtitle || "Work travel, time by the water, and relaxed weekends."}
           </p>
         </div>
 
@@ -433,7 +433,7 @@ export default async function RealmCardsPage({
                 Looking forward to saying hello! ✨
               </h3>
               <p className="text-xl text-zinc-300 mt-2">
-                Drop me a message in chat—excited to learn more about you.
+                Drop me a message in chat. I&apos;d like to hear more about you.
               </p>
             </div>
           )}
