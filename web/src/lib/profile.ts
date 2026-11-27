@@ -213,7 +213,7 @@ export function getGenericStarterProfile(displayName: string): ProfileConfig {
       ],
     },
     valuesMirror: {
-      enabled: true,
+      enabled: false,
       title: "Values & Communication Mirror",
       subtitle: "No compatibility scores or gimmicks, just a quick look at how we handle everyday situations.",
       scenarios: [

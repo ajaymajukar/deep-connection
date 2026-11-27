@@ -26,7 +26,6 @@ import TurnstileWidget from "@/components/TurnstileWidget";
 import ContactSection from "@/components/ContactSection";
 import MutualPhotoReveal from "@/components/MutualPhotoReveal";
 import SundayRitualSection from "@/components/SundayRitualSection";
-import ValuesMirrorSection from "@/components/ValuesMirrorSection";
 import VoiceIntroPlayer from "@/components/VoiceIntroPlayer";
 import { DEFAULT_PROFILE, ProfileConfig, getGenericStarterProfile } from "@/lib/profile";
 
@@ -214,7 +213,7 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
 
   // 3. Section Dwell Tracking & IntersectionObserver
   useEffect(() => {
-    const sections = ["hero", "craft", "sunday", "rhythm", "private-album", "mirror", "vision", "connect"];
+    const sections = ["hero", "craft", "sunday", "rhythm", "private-album", "vision", "connect"];
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -866,26 +865,6 @@ function RealmStoryContent({ paramsPromise }: { paramsPromise: Promise<{ slug: s
             referrer={activeInvite ? `${activeInvite.source} (VIP: ${activeInvite.guestName})` : undefined}
           />
         )}
-
-        {/* Section 2.8: Values & Communication Mirror */}
-        {!isExport &&
-          profile.valuesMirror?.enabled !== false &&
-          profile.valuesMirror?.scenarios &&
-          profile.valuesMirror.scenarios.length > 0 && (
-            <ValuesMirrorSection
-              ownerName={profile.name}
-              title={profile.valuesMirror.title}
-              subtitle={profile.valuesMirror.subtitle}
-              scenarios={profile.valuesMirror.scenarios}
-              onBringToNote={(summary) => {
-                window.dispatchEvent(
-                  new CustomEvent("prefill-contact-note", { detail: { summary } })
-                );
-                const el = document.getElementById("connect");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }}
-            />
-          )}
 
         {/* Section 3: Life Partner Vision */}
         <section id="partner-vision" data-section="vision" className="py-16 px-4 sm:px-6 max-w-5xl mx-auto border-t border-zinc-900">

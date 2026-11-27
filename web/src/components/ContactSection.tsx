@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import confetti from "canvas-confetti";
 import { Send, CheckCircle2, AlertCircle, HeartHandshake, Sparkles, Lock, Camera, X, Eye } from "lucide-react";
@@ -35,21 +35,6 @@ export default function ContactSection({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const handlePrefill = (e: Event) => {
-      const detail = (e as CustomEvent<{ summary?: string }>).detail;
-      const summary = detail?.summary;
-      if (!summary || isSubmitted) return;
-      setMessage((prev) => {
-        if (!prev.trim()) return summary;
-        if (prev.includes(summary.slice(0, 35))) return prev;
-        return `${prev.trim()}\n\n${summary}`;
-      });
-    };
-    window.addEventListener("prefill-contact-note", handlePrefill);
-    return () => window.removeEventListener("prefill-contact-note", handlePrefill);
-  }, [isSubmitted]);
 
   const displayTitle = title || `Say Hello to ${ownerName}`;
   const displaySubtitle =
